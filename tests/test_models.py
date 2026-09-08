@@ -30,7 +30,9 @@ def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch, route: str) -> N
         models,
         "fetch_json",
         lambda url: (
-            [BASE] if url == models.CATALOG else {"data": {"providers": [PROVIDER]}}
+            {"example/model": BASE}
+            if url == models.CATALOG
+            else {"data": {"providers": [PROVIDER]}}
         ),
     )
     result = models.pinned_model(f"{route}/example/model:provider")
@@ -76,11 +78,12 @@ def test_invalid_model_routes(value: str) -> None:
     [
         ({}, PROVIDER),
         ([], PROVIDER),
-        ([{**BASE, "api": "wrong"}], PROVIDER),
-        ([BASE], {**PROVIDER, "status": "offline"}),
-        ([BASE], {**PROVIDER, "supports_tools": False}),
-        ([BASE], {**PROVIDER, "pricing": {"input": -1, "output": 1}}),
-        ([BASE], {**PROVIDER, "context_length": 0}),
+        ({"example/model": {**BASE, "api": "wrong"}}, PROVIDER),
+        ({"example/model": {**BASE, "id": "wrong"}}, PROVIDER),
+        ({"example/model": BASE}, {**PROVIDER, "status": "offline"}),
+        ({"example/model": BASE}, {**PROVIDER, "supports_tools": False}),
+        ({"example/model": BASE}, {**PROVIDER, "pricing": {"input": -1, "output": 1}}),
+        ({"example/model": BASE}, {**PROVIDER, "context_length": 0}),
     ],
 )
 def test_metadata_fails_closed(
@@ -148,11 +151,19 @@ def test_isolated_native_settings(
 @pytest.mark.parametrize(
     "catalog,providers,expected",
     [
-        ({}, [], "Pi model catalog is unavailable"),
-        ([], [], "The requested model is not in Pi's chat-completions catalog"),
-        ([BASE], None, "HF provider metadata is unavailable"),
-        ([BASE], [], "The requested provider does not offer live tool use"),
-        ([{**BASE, "maxTokens": 0}], [PROVIDER], "Model limits must be positive"),
+        ([], [], "Pi model catalog is unavailable"),
+        ({}, [], "The requested model is not in Pi's chat-completions catalog"),
+        ({"example/model": BASE}, None, "HF provider metadata is unavailable"),
+        (
+            {"example/model": BASE},
+            [],
+            "The requested provider does not offer live tool use",
+        ),
+        (
+            {"example/model": {**BASE, "maxTokens": 0}},
+            [PROVIDER],
+            "Model limits must be positive",
+        ),
     ],
 )
 def test_metadata_errors_are_actionable(

@@ -21,6 +21,15 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run ty check
       - run: uv run pytest --cov=harbor_pi_code_mode --cov-fail-under=85
+      - name: Check the public Pi catalog contract without inference
+        run: |
+          uv run python - <<'PY'
+          from harbor_pi_code_mode.models import CATALOG, fetch_json
+          from harbor_pi_code_mode.values import record
+          catalog = record(fetch_json(CATALOG))
+          assert catalog
+          assert all(key == record(model).get("id") for key, model in catalog.items())
+          PY
       - run: uv run lint-imports
       - run: uv run pip-audit
       - run: uv run slophammer-py check .

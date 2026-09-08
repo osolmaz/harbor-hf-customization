@@ -37,12 +37,10 @@ def pinned_model(requested: str) -> dict[str, object]:
     ):
         raise ValueError("Use an explicit HF model and provider")
     catalog = fetch_json(CATALOG)
-    if not isinstance(catalog, list):
+    if not isinstance(catalog, dict):
         raise ValueError("Pi model catalog is unavailable")
-    base = next(
-        (record(item) for item in catalog if record(item).get("id") == base_id), None
-    )
-    if base is None or base.get("api") != "openai-completions":
+    base = record(catalog.get(base_id, {}))
+    if base.get("id") != base_id or base.get("api") != "openai-completions":
         raise ValueError("The requested model is not in Pi's chat-completions catalog")
     data = record(
         record(fetch_json(f"{ROUTER}/models/{quote(base_id, safe='/')}"))["data"]
