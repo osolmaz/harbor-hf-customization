@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from harbor_pi_code_mode.rpc import PiRpc
 
 

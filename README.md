@@ -23,10 +23,44 @@ Pi calculates cost from provider token counts and HF's quoted rates. Cached
 input uses the full input rate because the public metadata does not quote cache
 discounts. This is a conservative estimate, not a provider invoice.
 
-Each `harnesses/<name>/` directory will contain a native `harbor-agent.json`,
+Each `harnesses/<name>/` directory contains a native `harbor-agent.json`,
 `pyproject.toml`, and `uv.lock`. Pin the repository to a full commit and select
 that directory through Harbor's `agents[].kwargs.source.source_dir`. A hosted
 service must approve the exact source before it can receive credentials.
+
+### Launch configuration
+
+In a launch form, choose an ACP source agent. Enter this repository's Git URL,
+a full commit, `harnesses/pi-code-mode` as the source directory, and
+`harbor-agent.json` as the manifest. Select the benchmark separately, then set
+an explicit HF model and provider. The corresponding native agent fragment is:
+
+```json
+{
+  "name": "acp",
+  "model_name": "openai/<model-namespace>/<model>:<provider>",
+  "kwargs": {
+    "source": {
+      "repo_url": "https://github.com/osolmaz/harbor-custom-harnesses.git",
+      "ref": "<full-40-character-commit>",
+      "source_dir": "harnesses/pi-code-mode",
+      "manifest_path": "harbor-agent.json"
+    }
+  }
+}
+```
+
+Harbor fetches the pinned source and uses its native `python-uv` installer to
+install the locked wheel inside the task environment. The wheel starts Pi and
+Code Mode, while the ACP adapter carries messages, tool events, usage, and cost
+back to Harbor. No harness package needs to be added to the Harbor-HF image.
+
+For a small integration test, select `harbor-agent-canary.json`. It uses the
+same wheel but allows at most four provider requests per process. The task is
+in `tests/canary/code-mode`. Select Linux x64 CPU hardware; GPU hardware is not
+needed because inference uses the remote HF router. The canary verifies a file
+written by Code Mode. Also inspect agent logs for the actual tool call and
+confirm that every parent and child Job has stopped.
 
 See [the build instructions](docs/build.md) to build and verify a runtime wheel.
 Do not treat an unverified build as a benchmark result.

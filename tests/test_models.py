@@ -145,6 +145,31 @@ def test_isolated_native_settings(
     }
 
 
+@pytest.mark.parametrize(
+    "catalog,providers,expected",
+    [
+        ({}, [], "Pi model catalog is unavailable"),
+        ([], [], "The requested model is not in Pi's chat-completions catalog"),
+        ([BASE], None, "HF provider metadata is unavailable"),
+        ([BASE], [], "The requested provider does not offer live tool use"),
+        ([{**BASE, "maxTokens": 0}], [PROVIDER], "Model limits must be positive"),
+    ],
+)
+def test_metadata_errors_are_actionable(
+    monkeypatch: pytest.MonkeyPatch, catalog: object, providers: object, expected: str
+) -> None:
+    monkeypatch.setattr(
+        models,
+        "fetch_json",
+        lambda url: (
+            catalog if url == models.CATALOG else {"data": {"providers": providers}}
+        ),
+    )
+    with pytest.raises(ValueError) as error:
+        models.pinned_model("openai/example/model:provider")
+    assert str(error.value) == expected
+
+
 def test_missing_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
     with pytest.raises(RuntimeError, match="payload"):
