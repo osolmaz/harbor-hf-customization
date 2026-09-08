@@ -140,7 +140,7 @@ def test_isolated_native_settings(
         json.loads((settings / "models.json").read_text())["providers"]["hf-pinned"][
             "apiKey"
         ]
-        == "OPENAI_API_KEY"
+        == "${OPENAI_API_KEY}"
     )
     assert not (settings / "auth.json").exists()
     assert json.loads((settings / "config/pi-code-mode/config.json").read_text()) == {

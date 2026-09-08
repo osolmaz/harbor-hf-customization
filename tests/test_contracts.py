@@ -120,7 +120,7 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
             "hf-pinned": {
                 "baseUrl": "https://router.huggingface.co/v1",
                 "api": "openai-completions",
-                "apiKey": "OPENAI_API_KEY",
+                "apiKey": "${OPENAI_API_KEY}",
                 "models": [model],
             }
         }

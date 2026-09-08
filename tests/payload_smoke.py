@@ -19,6 +19,12 @@ class ScriptedModel:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         headers = (await reader.readuntil(b"\r\n\r\n")).decode().split("\r\n")
+        authorization = next(
+            line.split(":", 1)[1].strip()
+            for line in headers
+            if line.lower().startswith("authorization:")
+        )
+        assert authorization == "Bearer test-only-scripted-peer"
         length = next(
             int(line.split(":", 1)[1])
             for line in headers

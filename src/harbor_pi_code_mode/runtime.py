@@ -30,7 +30,7 @@ def command(
                     "hf-pinned": {
                         "baseUrl": ROUTER,
                         "api": "openai-completions",
-                        "apiKey": "OPENAI_API_KEY",
+                        "apiKey": "${OPENAI_API_KEY}",
                         "models": [model],
                     }
                 }

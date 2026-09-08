@@ -86,7 +86,7 @@ class PiCodeModeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="pi-code-mode", version="0.1.0rc2"),
+            agent_info=Implementation(name="pi-code-mode", version="0.1.0rc3"),
         )
 
     def options(self) -> list[SessionConfigOptionSelect]:
