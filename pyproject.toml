@@ -1,0 +1,75 @@
+[project]
+name = "harbor-custom-harnesses"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["harbor-pi-code-mode-runtime"]
+
+[tool.uv.sources]
+harbor-pi-code-mode-runtime = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/pi-code-mode-runtime"]
+exclude = ["harnesses/*"]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "ty",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pip-audit",
+    "slophammer-py==0.5.0",
+    "mutmut",
+    "import-linter",
+    "hatchling==1.32.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C90", "ANN", "TID"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ty.rules]
+all = "error"
+missing-type-argument = "error"
+possibly-missing-attribute = "error"
+possibly-unresolved-reference = "error"
+possibly-missing-import = "error"
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.analysis]
+respect-type-ignore-comments = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=harbor_pi_code_mode --cov-branch --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["harbor_pi_code_mode"]
+omit = ["*/payload/*"]
+
+[tool.importlinter]
+root_package = "harbor_pi_code_mode"
+
+[[tool.importlinter.contracts]]
+name = "Protocol transport does not depend on the agent"
+type = "forbidden"
+source_modules = ["harbor_pi_code_mode.rpc"]
+forbidden_modules = ["harbor_pi_code_mode.agent"]
+
+[tool.mutmut]
+source_paths = ["packages/pi-code-mode-runtime/src/harbor_pi_code_mode/"]
+pytest_add_cli_args_test_selection = ["tests/"]
+pytest_add_cli_args = ["--no-cov"]

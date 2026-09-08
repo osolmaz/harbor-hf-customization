@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+node_modules/
+packages/*/payload/
+mutants/
+.mutmut-cache
+.import_linter_cache/
+*.egg-info/

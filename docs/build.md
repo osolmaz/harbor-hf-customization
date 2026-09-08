@@ -1,0 +1,46 @@
+# Build a pinned harness runtime
+
+Build the wheel on Linux x64 using the reviewed Dockerfile:
+
+```sh
+docker buildx build --platform linux/amd64 \
+  -f build/pi-code-mode/Dockerfile --output type=local,dest=dist .
+```
+
+The image pins official Node and Rust images by digest. It builds the Code Mode
+source at a full commit using its npm and Cargo locks. Pi dependencies use the
+separate npm lock in `build/pi-code-mode/`. The wheel contains the Python ACP
+adapter, Node, Pi, the extension, and their license files.
+
+The build runs a no-inference smoke test with the real packaged Pi and Code
+Mode host against a local scripted HTTP peer. This is a transport and tool test,
+not model inference or benchmark evidence.
+
+Publish a successful wheel as a prerelease asset in this repository. Do not
+replace an existing asset. Create the native harness project with a direct URL
+dependency on that exact wheel and run `uv lock`. The lock retains the wheel
+hash; no custom download protocol or artifact registry is needed.
+
+A harness source pin consists of the full repository commit and its native
+`source_dir` and manifest path. Operators must review that exact source before
+it receives a credential. Keep deployment identifiers and remote canary records
+in the operator's existing private control and artifact stores.
+
+## Boundaries
+
+The adapter uses Pi's documented `get_state`, `prompt`, `abort`,
+`get_session_stats`, and `agent_settled` RPC messages. It does not call Pi
+internals or implement a second conversation loop. Pi's standard sessions and
+raw RPC events are normal agent output below `/logs/agent/pi-code-mode/`.
+Harbor collects them with its agent logs and writes authoritative trial results.
+
+Pi owns session entries, including the Code Mode extension's normal contract
+entry. Other transient data consists of standard Pi settings in a temporary
+directory. The custom model file contains an environment-variable name, never
+the credential value. No Pi schema or internal API is changed.
+
+Only one ACP session and one active prompt are accepted by a process. Model
+selection is advertised through ACP's native model configuration option and
+must match the model supplied by Harbor. Provider failures and missing usage
+fail closed. The adapter reports actual Pi statistics rather than inventing
+zero-cost success.

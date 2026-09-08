@@ -1,0 +1,11 @@
+{
+  "name": "harbor-pi-code-mode-payload",
+  "version": "0.1.0-rc.1",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "0.84.4",
+    "@earendil-works/pi-ai": "0.84.4",
+    "typebox": "1.3.22"
+  }
+}

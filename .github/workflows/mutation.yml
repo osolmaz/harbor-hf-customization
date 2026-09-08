@@ -1,0 +1,21 @@
+name: mutation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          version: 0.12.5
+          python-version: '3.12'
+      - run: uv sync --all-groups --locked
+      - run: uv run mutmut run
+      - run: uv run mutmut export-cicd-stats
+      - run: uv run python scripts/check_mutations.py --min-kill-rate 85
