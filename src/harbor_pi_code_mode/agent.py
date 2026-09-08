@@ -1,5 +1,6 @@
 """ACP transport adapter for the pinned Pi RPC process."""
 
+import argparse
 import asyncio
 import os
 import tempfile
@@ -56,7 +57,10 @@ PromptBlock = (
 
 
 class PiCodeModeAgent(Agent):
-    def __init__(self, logs: Path | None = None) -> None:
+    def __init__(
+        self, logs: Path | None = None, max_provider_requests: int | None = None
+    ) -> None:
+        self.max_provider_requests = max_provider_requests
         self.logs = logs or Path("/logs/agent/pi-code-mode")
         self.conn: Client | None = None
         self.rpc = PiRpc()
@@ -115,7 +119,9 @@ class PiCodeModeAgent(Agent):
         model = await asyncio.to_thread(pinned_model, self.model_id)
         self.settings = tempfile.TemporaryDirectory(prefix="pi-code-mode-")
         self.logs.mkdir(parents=True, exist_ok=True)
-        args, env = command(model, Path(self.settings.name), self.logs)
+        args, env = command(
+            model, Path(self.settings.name), self.logs, self.max_provider_requests
+        )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
         selected = record(state.get("model"))
@@ -279,8 +285,8 @@ class PiCodeModeAgent(Agent):
             self.settings.cleanup()
 
 
-async def serve() -> None:
-    agent = PiCodeModeAgent()
+async def serve(max_provider_requests: int | None = None) -> None:
+    agent = PiCodeModeAgent(max_provider_requests=max_provider_requests)
     try:
         await run_agent(agent)
     finally:
@@ -288,4 +294,9 @@ async def serve() -> None:
 
 
 def main() -> None:
-    asyncio.run(serve())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--max-provider-requests", type=int)
+    args = parser.parse_args()
+    if args.max_provider_requests is not None and args.max_provider_requests < 1:
+        parser.error("--max-provider-requests must be positive")
+    asyncio.run(serve(args.max_provider_requests))

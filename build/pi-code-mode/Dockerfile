@@ -18,8 +18,8 @@ RUN cd /payload && npm ci --omit=dev \
     && cp -a /src/pi-code-mode/dist /src/pi-code-mode/LICENSE /src/pi-code-mode/package.json node_modules/pi-code-mode/ \
     && cp /usr/local/LICENSE node-LICENSE
 COPY . /repo
-RUN cp -a /payload packages/pi-code-mode-runtime/payload \
-    && uv build --package harbor-pi-code-mode-runtime --wheel --python 3.12 \
+RUN cp -a /payload payload \
+    && uv build --wheel --python 3.12 \
     && uv run --no-project --python 3.12 --with /repo/dist/*.whl python tests/payload_smoke.py
 FROM scratch AS artifact
 COPY --from=build /repo/dist/ /

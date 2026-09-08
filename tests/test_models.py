@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from harbor_pi_code_mode import models, runtime
 from harbor_pi_code_mode.values import count, number, record
 
@@ -23,7 +24,8 @@ PROVIDER = {
 }
 
 
-def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("route", ["openai", "huggingface"])
+def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch, route: str) -> None:
     monkeypatch.setattr(
         models,
         "fetch_json",
@@ -31,17 +33,27 @@ def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
             [BASE] if url == models.CATALOG else {"data": {"providers": [PROVIDER]}}
         ),
     )
-    result = models.pinned_model("openai/example/model:provider")
+    result = models.pinned_model(f"{route}/example/model:provider")
     assert result["id"] == "example/model:provider"
     assert result["cost"] == {
         "input": 1.0,
         "output": 2.0,
-        "cacheRead": 0,
-        "cacheWrite": 0,
+        "cacheRead": 1.0,
+        "cacheWrite": 1.0,
     }
     assert result["contextWindow"] == 2000
     assert result["compat"] == BASE["compat"]
     assert "provider" not in result
+    assert result == {
+        "id": "example/model:provider",
+        "api": "openai-completions",
+        "reasoning": True,
+        "input": ["text"],
+        "maxTokens": 1000,
+        "compat": {"supportsDeveloperRole": False},
+        "contextWindow": 2000,
+        "cost": {"input": 1.0, "output": 2.0, "cacheRead": 1.0, "cacheWrite": 1.0},
+    }
 
 
 @pytest.mark.parametrize(
@@ -55,7 +67,7 @@ def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     ],
 )
 def test_invalid_model_routes(value: str) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="^Use an explicit HF model and provider$"):
         models.pinned_model(value)
 
 

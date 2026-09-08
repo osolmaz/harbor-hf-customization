@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import cast, override
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from acp import RequestError
 from acp.interfaces import Client
 from acp.schema import TextContentBlock
+
 from harbor_pi_code_mode import agent
 from harbor_pi_code_mode.rpc import PiRpc
 
@@ -66,9 +67,25 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "pi-code-mode"
+    assert initialized.agent_info.version == "0.1.0rc1"
+    assert initialized.protocol_version == 1
+    assert initialized.agent_capabilities is not None
     response = await harness.new_session("/app")
     assert response.config_options is not None
-    assert response.config_options[0].category == "model"
+    option = response.config_options[0]
+    assert option.model_dump(by_alias=True, exclude_none=True) == {
+        "id": "model",
+        "name": "Model",
+        "category": "model",
+        "type": "select",
+        "currentValue": "openai/example/model:provider",
+        "options": [
+            {
+                "value": "openai/example/model:provider",
+                "name": "openai/example/model:provider",
+            }
+        ],
+    }
     selected = await harness.set_config_option(
         "model", response.session_id, harness.model_id
     )
@@ -123,7 +140,15 @@ async def test_forwards_tools_and_authoritative_usage(
     )
     assert result.stop_reason == "end_turn"
     assert result.usage is not None and result.usage.input_tokens == 105
-    assert result.usage.cached_read_tokens == 3
+    assert result.usage.model_dump(by_alias=True, exclude_none=True) == {
+        "inputTokens": 105,
+        "outputTokens": 10,
+        "totalTokens": 115,
+        "cachedReadTokens": 3,
+        "cachedWriteTokens": 2,
+    }
+    prompt_calls = cast(FakePi, harness.rpc).calls
+    assert "prompt" in prompt_calls
     connection = cast(AsyncMock, harness.conn)
     updates = [
         call.kwargs["update"] for call in connection.session_update.call_args_list
@@ -138,6 +163,19 @@ async def test_forwards_tools_and_authoritative_usage(
         if update.session_update == "usage_update"
     ]
     assert costs == [0.01, 0.01]
+    assert [
+        call.kwargs["session_id"] for call in connection.session_update.call_args_list
+    ] == [response.session_id] * len(updates)
+    for update in updates:
+        if update.session_update == "usage_update":
+            assert update.used == 100 and update.size == 2000
+            assert update.cost.currency == "USD"
+        elif update.session_update == "tool_call":
+            assert update.tool_call_id == "one" and update.status == "in_progress"
+            assert update.raw_input == {"code": "text(1)"}
+        elif update.session_update == "tool_call_update":
+            assert update.tool_call_id == "one" and update.status == "completed"
+            assert update.raw_output == {"content": []}
     await harness.close()
 
 
@@ -172,6 +210,136 @@ async def test_missing_credential(
     harness: agent.PiCodeModeAgent, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("OPENAI_API_KEY")
-    with pytest.raises(RuntimeError, match="credential"):
+    with pytest.raises(
+        RuntimeError, match="^The inference credential is not configured$"
+    ):
         await harness.new_session("/app")
     await harness.close()
+
+
+async def test_message_contract(harness: agent.PiCodeModeAgent) -> None:
+    response = await harness.new_session("/app")
+    connection = cast(AsyncMock, harness.conn)
+    await harness.message({"message": {"role": "user", "content": []}})
+    connection.session_update.assert_not_called()
+    await harness.message(
+        {
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "answer"},
+                    {"type": "thinking", "thinking": "reason"},
+                    {"type": "text"},
+                    {"type": "thinking"},
+                    {"type": "unknown"},
+                ],
+            }
+        }
+    )
+    updates = [
+        call.kwargs["update"] for call in connection.session_update.call_args_list
+    ]
+    assert [(item.session_update, item.content.text) for item in updates[:-1]] == [
+        ("agent_message_chunk", "answer"),
+        ("agent_thought_chunk", "reason"),
+        ("agent_message_chunk", ""),
+        ("agent_thought_chunk", ""),
+    ]
+    assert not harness.failed
+    with pytest.raises(ValueError, match="^Invalid Pi message content$"):
+        await harness.message({"message": {"role": "assistant", "content": None}})
+    await harness.event(
+        {"type": "tool_execution_end", "toolCallId": "failed-tool", "isError": True}
+    )
+    update = connection.session_update.call_args.kwargs["update"]
+    assert update.status == "failed" and update.tool_call_id == "failed-tool"
+    assert update.raw_output is None
+    await harness.cancel(response.session_id)
+    assert harness.cancelled.is_set()
+    assert cast(FakePi, harness.rpc).calls[-1] == "abort"
+    await harness.close()
+
+
+async def test_session_start_contract(
+    harness: agent.PiCodeModeAgent, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = {"id": "example/model:provider"}
+    resolve = Mock(return_value=model)
+    launch = Mock(return_value=(["runtime"], {"TEST": "value"}))
+    monkeypatch.setattr(agent, "pinned_model", resolve)
+    monkeypatch.setattr(agent, "command", launch)
+    start = AsyncMock()
+    monkeypatch.setattr(harness.rpc, "start", start)
+    await harness.new_session("/workspace")
+    resolve.assert_called_once_with("openai/example/model:provider")
+    assert harness.settings is not None
+    settings = Path(harness.settings.name)
+    launch.assert_called_once_with(model, settings, harness.logs, None)
+    start.assert_awaited_once_with(
+        ["runtime"], "/workspace", {"TEST": "value"}, harness.logs / "pi-events.jsonl"
+    )
+    assert settings.exists()
+    await harness.close()
+    assert not settings.exists()
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        {"id": "wrong", "provider": "hf-pinned"},
+        {"id": "example/model:provider", "provider": "wrong"},
+    ],
+)
+async def test_model_attestation(
+    harness: agent.PiCodeModeAgent, monkeypatch: pytest.MonkeyPatch, model: object
+) -> None:
+    monkeypatch.setattr(
+        harness.rpc, "request", AsyncMock(return_value={"model": model})
+    )
+    with pytest.raises(
+        RuntimeError, match="^Pi selected a different model or provider$"
+    ):
+        await harness.new_session("/app")
+    await harness.close()
+
+
+async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
+    harness = AsyncMock()
+    constructor = Mock(return_value=harness)
+    runner = AsyncMock(side_effect=RuntimeError("transport closed"))
+    monkeypatch.setattr(agent, "PiCodeModeAgent", constructor)
+    monkeypatch.setattr(agent, "run_agent", runner)
+    with pytest.raises(RuntimeError, match="transport closed"):
+        await agent.serve()
+    constructor.assert_called_once_with(max_provider_requests=None)
+    runner.assert_awaited_once_with(harness)
+    harness.close.assert_awaited_once_with()
+
+
+@pytest.mark.parametrize("limit", [None, 1, 4])
+def test_cli_request_bound(monkeypatch: pytest.MonkeyPatch, limit: int | None) -> None:
+    import sys
+
+    argv = ["harbor-pi-code-mode"]
+    if limit is not None:
+        argv.extend(["--max-provider-requests", str(limit)])
+    monkeypatch.setattr(sys, "argv", argv)
+    serve = Mock(return_value="awaitable")
+    run = Mock()
+    monkeypatch.setattr(agent, "serve", serve)
+    monkeypatch.setattr(agent.asyncio, "run", run)
+    agent.main()
+    serve.assert_called_once_with(limit)
+    run.assert_called_once_with("awaitable")
+
+
+@pytest.mark.parametrize("limit", ["0", "-1", "bad"])
+def test_cli_rejects_invalid_bound(monkeypatch: pytest.MonkeyPatch, limit: str) -> None:
+    import sys
+
+    monkeypatch.setattr(
+        sys, "argv", ["harbor-pi-code-mode", "--max-provider-requests", limit]
+    )
+    with pytest.raises(SystemExit) as error:
+        agent.main()
+    assert error.value.code == 2

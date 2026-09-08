@@ -14,7 +14,8 @@ adapter, Node, Pi, the extension, and their license files.
 
 The build runs a no-inference smoke test with the real packaged Pi and Code
 Mode host against a local scripted HTTP peer. This is a transport and tool test,
-not model inference or benchmark evidence.
+not model inference or benchmark evidence. A second test sets a one-request
+limit and verifies that Pi aborts before a second HTTP request reaches the peer.
 
 Publish a successful wheel as a prerelease asset in this repository. Do not
 replace an existing asset. Create the native harness project with a direct URL
@@ -43,4 +44,13 @@ Only one ACP session and one active prompt are accepted by a process. Model
 selection is advertised through ACP's native model configuration option and
 must match the model supplied by Harbor. Provider failures and missing usage
 fail closed. The adapter reports actual Pi statistics rather than inventing
-zero-cost success.
+zero-cost success. Cost is Pi's estimate from HF's quoted rates, with cached
+input charged at the full input rate when no cache price is published.
+
+For a bounded probe, a native manifest can add `--max-provider-requests 4` to
+its entrypoint. This uses Pi's public `before_provider_request` hook and
+`ctx.abort()` before an excess request. The counter is process-local and also
+counts compaction requests. It does not change Pi's session format or write a
+budget store. A fresh process gets a fresh limit, so operators must count all
+attempts and retries against the campaign limit. The ordinary entrypoint has
+no request limit. Harbor still owns trial timeouts and retries.

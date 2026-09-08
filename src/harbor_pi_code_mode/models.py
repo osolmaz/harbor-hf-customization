@@ -78,8 +78,11 @@ def pinned_model(requested: str) -> dict[str, object]:
             "cost": {
                 "input": number(pricing.get("input")),
                 "output": number(pricing.get("output")),
-                "cacheRead": 0,
-                "cacheWrite": 0,
+                # HF's public metadata quotes input/output, not cache discounts.
+                # Charge cached input at the input rate rather than inventing
+                # free tokens. Pi's reported cost is a conservative estimate.
+                "cacheRead": number(pricing.get("input")),
+                "cacheWrite": number(pricing.get("input")),
             },
             "contextWindow": context,
             "maxTokens": min(count(base.get("maxTokens")), context),

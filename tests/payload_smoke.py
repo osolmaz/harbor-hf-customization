@@ -71,7 +71,7 @@ class ScriptedModel:
         await writer.wait_closed()
 
 
-async def smoke() -> None:
+async def smoke(max_provider_requests: int | None = None) -> None:
     peer = ScriptedModel()
     server = await asyncio.start_server(peer.respond, "127.0.0.1", 0)
     async with server, asyncio.timeout(90):
@@ -89,7 +89,9 @@ async def smoke() -> None:
                 "cost": {"input": 1, "output": 1, "cacheRead": 0, "cacheWrite": 0},
             }
             with patch.object(runtime, "ROUTER", router):
-                args, env = runtime.command(model, root / "settings", root)
+                args, env = runtime.command(
+                    model, root / "settings", root, max_provider_requests
+                )
             env["OPENAI_API_KEY"] = "test-only-scripted-peer"
             rpc = PiRpc()
             try:
@@ -108,16 +110,20 @@ async def smoke() -> None:
                     if event.get("type") == "agent_settled":
                         break
                 assert (root / "result.txt").read_text() == "code-mode-ok"
-                assert peer.calls == 2
+                expected_calls = 1 if max_provider_requests == 1 else 2
+                assert peer.calls == expected_calls, (
+                    f"Expected {expected_calls} HTTP requests, observed {peer.calls}"
+                )
                 stats = await rpc.request("get_session_stats")
-                assert record(stats["tokens"])["output"] == 20
+                assert record(stats["tokens"])["output"] == expected_calls * 10
             finally:
                 await rpc.close()
             print(
                 "Real Pi and Code Mode tool execution passed against "
-                "a scripted peer; no inference."
+                f"a scripted peer; request bound={max_provider_requests}; no inference."
             )
 
 
 if __name__ == "__main__":
     asyncio.run(smoke())
+    asyncio.run(smoke(max_provider_requests=1))

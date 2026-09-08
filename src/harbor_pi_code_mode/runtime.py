@@ -8,7 +8,10 @@ from harbor_pi_code_mode.models import ROUTER
 
 
 def command(
-    model: dict[str, object], settings: Path, logs: Path
+    model: dict[str, object],
+    settings: Path,
+    logs: Path,
+    max_provider_requests: int | None = None,
 ) -> tuple[list[str], dict[str, str]]:
     payload = Path(__file__).parent / "payload"
     node = payload / "bin/node"
@@ -44,7 +47,7 @@ def command(
             }
         )
     )
-    env = {
+    env: dict[str, str] = {
         **os.environ,
         "PI_CODING_AGENT_DIR": str(settings),
         "PI_OFFLINE": "1",
@@ -73,4 +76,10 @@ def command(
         "-e",
         str(extension),
     ]
+    env.pop("HARBOR_PI_MAX_PROVIDER_REQUESTS", None)
+    if max_provider_requests is not None:
+        if max_provider_requests < 1:
+            raise ValueError("The provider request limit must be positive")
+        env["HARBOR_PI_MAX_PROVIDER_REQUESTS"] = str(max_provider_requests)
+        args.extend(["-e", str(Path(__file__).with_name("request-limit.mjs"))])
     return args, env

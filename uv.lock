@@ -7,12 +7,6 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
-[manifest]
-members = [
-    "harbor-custom-harnesses",
-    "harbor-pi-code-mode-runtime",
-]
-
 [[package]]
 name = "agent-client-protocol"
 version = "0.12.1"
@@ -431,11 +425,11 @@ wheels = [
 ]
 
 [[package]]
-name = "harbor-custom-harnesses"
-version = "0.1.0"
-source = { virtual = "." }
+name = "harbor-pi-code-mode-runtime"
+version = "0.1.0rc1"
+source = { editable = "." }
 dependencies = [
-    { name = "harbor-pi-code-mode-runtime" },
+    { name = "agent-client-protocol" },
 ]
 
 [package.dev-dependencies]
@@ -453,7 +447,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "harbor-pi-code-mode-runtime", editable = "packages/pi-code-mode-runtime" }]
+requires-dist = [{ name = "agent-client-protocol", specifier = "==0.12.1" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -468,17 +462,6 @@ dev = [
     { name = "slophammer-py", specifier = "==0.5.0" },
     { name = "ty" },
 ]
-
-[[package]]
-name = "harbor-pi-code-mode-runtime"
-version = "0.1.0rc1"
-source = { editable = "packages/pi-code-mode-runtime" }
-dependencies = [
-    { name = "agent-client-protocol" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "agent-client-protocol", specifier = "==0.12.1" }]
 
 [[package]]
 name = "hatchling"

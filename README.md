@@ -19,6 +19,9 @@ Pi's model metadata and the selected provider's reported prices and context
 limit. It uses normal JSON tool input, high reasoning, and no automatic model
 or provider substitution. Supply the inference credential through
 `OPENAI_API_KEY`; no credential value is written to configuration files.
+Pi calculates cost from provider token counts and HF's quoted rates. Cached
+input uses the full input rate because the public metadata does not quote cache
+discounts. This is a conservative estimate, not a provider invoice.
 
 Each `harnesses/<name>/` directory will contain a native `harbor-agent.json`,
 `pyproject.toml`, and `uv.lock`. Pin the repository to a full commit and select
@@ -31,7 +34,7 @@ Do not treat an unverified build as a benchmark result.
 ## Adding a harness
 
 Add another directory under `harnesses/` with its own native manifest and lock.
-Keep its runtime package under `packages/`. Existing pins remain reproducible
+The initial runtime lives under `src/harbor_pi_code_mode/`. Existing pins remain reproducible
 when another harness changes. Do not add a second task runner, result format,
 model API client, or runtime configuration schema.
 
