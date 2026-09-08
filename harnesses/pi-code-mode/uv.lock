@@ -31,13 +31,13 @@ wheels = [
 
 [[package]]
 name = "harbor-pi-code-mode-runtime"
-version = "0.1.0rc1"
-source = { url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc1/harbor_pi_code_mode_runtime-0.1.0rc1-py3-none-linux_x86_64.whl" }
+version = "0.1.0rc2"
+source = { url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc2/harbor_pi_code_mode_runtime-0.1.0rc2-py3-none-linux_x86_64.whl" }
 dependencies = [
     { name = "agent-client-protocol" },
 ]
 wheels = [
-    { url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc1/harbor_pi_code_mode_runtime-0.1.0rc1-py3-none-linux_x86_64.whl", hash = "sha256:fdb7edac0fbe21690595147864946a06fc052d096eebaa7d4d297fec767fee1c" },
+    { url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc2/harbor_pi_code_mode_runtime-0.1.0rc2-py3-none-linux_x86_64.whl", hash = "sha256:70dc2a9d9594343ae55ca0f51cfe793a9dff6bd3ac7a6f35c82f03c475b1d2b6" },
 ]
 
 [package.metadata]
@@ -45,14 +45,14 @@ requires-dist = [{ name = "agent-client-protocol", specifier = "==0.12.1" }]
 
 [[package]]
 name = "harbor-pi-code-mode-source"
-version = "0.1.0rc1"
+version = "0.1.0rc2"
 source = { virtual = "." }
 dependencies = [
     { name = "harbor-pi-code-mode-runtime" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "harbor-pi-code-mode-runtime", url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc1/harbor_pi_code_mode_runtime-0.1.0rc1-py3-none-linux_x86_64.whl" }]
+requires-dist = [{ name = "harbor-pi-code-mode-runtime", url = "https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-code-mode-0.1.0rc2/harbor_pi_code_mode_runtime-0.1.0rc2-py3-none-linux_x86_64.whl" }]
 
 [[package]]
 name = "pydantic"
