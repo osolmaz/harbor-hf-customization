@@ -10,7 +10,9 @@ timeout_sec = 180
 timeout_sec = 30
 
 [environment]
-docker_image = "python:3.12.14-bookworm@sha256:9bbdaa0482ba166a4aa36b03162892a871c269311817cf7132db0922d6c7e91d"
+# Python 3.12.14 Bookworm. Omit the redundant tag so the HF-generated Job name
+# stays below its 100-character limit; the image digest is unchanged.
+docker_image = "python@sha256:9bbdaa0482ba166a4aa36b03162892a871c269311817cf7132db0922d6c7e91d"
 cpus = 2
 memory_mb = 2048
 storage_mb = 8192
