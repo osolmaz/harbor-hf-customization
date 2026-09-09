@@ -1,0 +1,16 @@
+schema_version = "1.4"
+
+[metadata]
+description = "Verify the pinned OpenClaw native runtime and selected tool mode"
+
+[agent]
+timeout_sec = 300
+
+[verifier]
+timeout_sec = 30
+
+[environment]
+docker_image = "python@sha256:9bbdaa0482ba166a4aa36b03162892a871c269311817cf7132db0922d6c7e91d"
+cpus = 2
+memory_mb = 2048
+storage_mb = 8192

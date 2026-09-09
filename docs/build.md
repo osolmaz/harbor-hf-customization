@@ -22,6 +22,21 @@ replace an existing asset. Create the native harness project with a direct URL
 dependency on that exact wheel and run `uv lock`. The lock retains the wheel
 hash; no custom download protocol or artifact registry is needed.
 
+Build the pinned OpenClaw native runtime separately:
+
+```sh
+docker buildx build --platform linux/amd64 \
+  -f build/openclaw-native/Dockerfile \
+  --output type=local,dest=dist/openclaw-native .
+```
+
+This build checks out the exact OpenClaw commit and runs OpenClaw's canonical
+self-contained Docker package builder and package-integrity check. The wheel
+contains the package tarball, official Node 24.18.0, npm, an npm lock, license
+files, and the ACP adapter. It does not contain credentials. Runtime setup uses
+`npm ci` against that lock. The no-inference payload smoke test verifies the
+source marker, Node version, lock format, and package artifact.
+
 A harness source pin consists of the full repository commit and its native
 `source_dir` and manifest path. Operators must review that exact source before
 it receives a credential. Keep deployment identifiers and remote canary records

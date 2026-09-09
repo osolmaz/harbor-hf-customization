@@ -9,6 +9,7 @@ htmlcov/
 dist/
 node_modules/
 packages/*/payload/
+runtimes/*/payload/
 mutants/
 .mutmut-cache
 .import_linter_cache/

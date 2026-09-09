@@ -1,0 +1,63 @@
+[project]
+name = "harbor-openclaw-native-runtime"
+version = "0.1.0rc1"
+description = "Pinned OpenClaw native ACP runtime for Harbor"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = ["agent-client-protocol==0.12.1"]
+
+[project.scripts]
+harbor-openclaw-native = "harbor_openclaw_native.agent:main"
+
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/harbor_openclaw_native"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "ty",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pip-audit",
+    "hatchling==1.32.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C90", "ANN"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ty.rules]
+all = "error"
+missing-type-argument = "error"
+possibly-missing-attribute = "error"
+possibly-unresolved-reference = "error"
+possibly-missing-import = "error"
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.analysis]
+respect-type-ignore-comments = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "--cov=harbor_openclaw_native --cov-branch --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["harbor_openclaw_native"]
+omit = ["*/payload/*"]

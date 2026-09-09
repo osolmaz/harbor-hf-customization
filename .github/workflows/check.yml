@@ -16,11 +16,19 @@ jobs:
           python-version: '3.12'
       - run: uv sync --all-groups --locked
       - run: uv lock --check --project harnesses/pi-code-mode
+      - run: uv lock --check --project runtimes/openclaw-native
+      - run: uv sync --project runtimes/openclaw-native --all-groups --locked
       - run: sh -n tests/canary/code-mode/tests/test.sh
+      - run: sh -n tests/canary/openclaw-native/tests/test.sh
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run ty check
       - run: uv run pytest --cov=harbor_pi_code_mode --cov-fail-under=85
+      - run: uv run --project runtimes/openclaw-native ruff check runtimes/openclaw-native
+      - run: uv run --project runtimes/openclaw-native ruff format --check runtimes/openclaw-native
+      - run: uv run --project runtimes/openclaw-native ty check --project runtimes/openclaw-native
+      - run: uv run --project runtimes/openclaw-native pytest runtimes/openclaw-native/tests
+      - run: uv run --project runtimes/openclaw-native pip-audit
       - name: Check the public Pi catalog contract without inference
         run: |
           uv run python - <<'PY'
@@ -44,7 +52,7 @@ jobs:
       - run: build/pi-code-mode/node_modules/.bin/biome check src/harbor_pi_code_mode/request-limit.mjs tests/request-limit.test.mjs
       - run: build/pi-code-mode/node_modules/.bin/tsc --allowJs --checkJs --noEmit --strict --module nodenext --target es2023 --types node --typeRoots build/pi-code-mode/node_modules/@types src/harbor_pi_code_mode/request-limit.mjs
       - run: node --test tests/request-limit.test.mjs
-  runtime:
+  pi-runtime:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -61,5 +69,24 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: pi-code-mode-runtime
+          path: dist/*.whl
+          if-no-files-found: error
+  openclaw-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: build/openclaw-native/Dockerfile
+          platforms: linux/amd64
+          outputs: type=local,dest=dist
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-native-runtime
           path: dist/*.whl
           if-no-files-found: error

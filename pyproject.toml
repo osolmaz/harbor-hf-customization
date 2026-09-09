@@ -59,6 +59,9 @@ error-on-warning = true
 [tool.ty.analysis]
 respect-type-ignore-comments = false
 
+[tool.ty.src]
+exclude = ["runtimes/openclaw-native"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

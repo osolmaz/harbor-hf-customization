@@ -65,6 +65,31 @@ confirm that every parent and child Job has stopped.
 See [the build instructions](docs/build.md) to build and verify a runtime wheel.
 Do not treat an unverified build as a benchmark result.
 
+## OpenClaw native runtime
+
+The OpenClaw harness runs the native embedded OpenClaw agent through its stable
+`agent exec` command. It pins OpenClaw source commit
+`651775ba8d2c7b10f37c5372d3528b41ecfbc804`, Node 24.18.0, the self-contained
+OpenClaw package, and its npm dependency lock in one reviewed wheel.
+
+The two manifests use the same runtime and differ only in the explicit
+`--code-mode` argument:
+
+- `harbor-agent-direct.json` uses `--code-mode direct`.
+- `harbor-agent-code.json` uses `--code-mode code`.
+
+Both modes force `agentRuntime: {"id": "openclaw"}` for the selected model.
+They use no fallback model and no ambient OpenClaw configuration or credential
+store. Harbor supplies the model and inference credential. The adapter saves
+the stable OpenClaw result envelope and source provenance with the agent logs,
+reports native token and cost metrics through ACP, and rejects a model, provider,
+or Code Mode mismatch.
+
+Use `tests/canary/openclaw-native` before a paid benchmark. A passing task is not
+enough by itself. Also confirm that `openclaw-source.json` has the pinned commit
+and that `openclaw-envelope.json` reports `codeModeEngaged` as false for the
+direct manifest and true for the Code Mode manifest.
+
 ## Adding a harness
 
 Add another directory under `harnesses/` with its own native manifest and lock.
