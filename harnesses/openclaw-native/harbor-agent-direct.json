@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "openclaw-native-direct",
+  "version": "0.1.0rc1",
+  "protocol": "acp",
+  "runtime": {
+    "kind": "python-uv",
+    "python": "3.12",
+    "project": ".",
+    "lockfile": "uv.lock",
+    "entrypoint": ["harbor-openclaw-native", "--code-mode", "direct"]
+  }
+}

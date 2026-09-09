@@ -1,0 +1,10 @@
+[project]
+name = "harbor-openclaw-native-source"
+version = "0.1.0rc1"
+requires-python = ">=3.12"
+dependencies = [
+    "harbor-openclaw-native-runtime @ https://github.com/osolmaz/harbor-custom-harnesses/releases/download/openclaw-native-0.1.0rc1/harbor_openclaw_native_runtime-0.1.0rc1-py3-none-linux_x86_64.whl",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
