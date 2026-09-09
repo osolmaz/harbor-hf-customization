@@ -84,7 +84,7 @@ class OpenClawNativeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="openclaw-native", version="0.1.0rc2"),
+            agent_info=Implementation(name="openclaw-native", version="0.1.0rc3"),
         )
 
     def model_option(self) -> SessionConfigOptionSelect:
@@ -115,6 +115,7 @@ class OpenClawNativeAgent(Agent):
         self.settings = tempfile.TemporaryDirectory(prefix="openclaw-native-")
         root = Path(self.settings.name)
         self.logs.mkdir(parents=True, exist_ok=True)
+        (root / "state").mkdir()
         config = root / "openclaw.json"
         write_config(
             config,

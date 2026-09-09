@@ -55,8 +55,10 @@ async def test_session_and_prompt(
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "openclaw-native"
-    assert initialized.agent_info.version == "0.1.0rc2"
+    assert initialized.agent_info.version == "0.1.0rc3"
     session = await harness.new_session("/app")
+    assert harness.settings is not None
+    assert (Path(harness.settings.name) / "state").is_dir()
     assert session.config_options is not None
     assert len(session.config_options) == 1
     model_option = session.config_options[0]
