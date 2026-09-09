@@ -55,7 +55,18 @@ async def test_session_and_prompt(
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "openclaw-native"
+    assert initialized.agent_info.version == "0.1.0rc2"
     session = await harness.new_session("/app")
+    assert session.config_options is not None
+    assert len(session.config_options) == 1
+    model_option = session.config_options[0]
+    assert model_option.id == "model"
+    assert model_option.current_value == REQUESTED
+    assert [(option.value, option.name) for option in model_option.options] == [
+        (REQUESTED, REQUESTED)
+    ]
+    configured = await harness.set_config_option("model", session.session_id, REQUESTED)
+    assert configured.config_options == session.config_options
     monkeypatch.setattr(agent, "command", Mock(return_value=(["runtime"], {"A": "b"})))
     execute = AsyncMock(return_value=ENVELOPE)
     monkeypatch.setattr(agent, "run", execute)
@@ -113,6 +124,26 @@ async def test_rejects_unsupported_session_options(
 ) -> None:
     with pytest.raises(RequestError):
         await harness.new_session("/app", additional_directories=["/tmp"])
+
+
+@pytest.mark.parametrize(
+    ("config_id", "session_id", "value"),
+    [
+        ("other", "current", REQUESTED),
+        ("model", "current", "openai/other"),
+        ("model", "wrong", REQUESTED),
+    ],
+)
+async def test_rejects_unsupported_model_selection(
+    harness: agent.OpenClawNativeAgent,
+    config_id: str,
+    session_id: str,
+    value: str,
+) -> None:
+    session = await harness.new_session("/app")
+    selected_session = session.session_id if session_id == "current" else session_id
+    with pytest.raises(RequestError):
+        await harness.set_config_option(config_id, selected_session, value)
 
 
 async def test_error_envelope_keeps_usage(

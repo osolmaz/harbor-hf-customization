@@ -30,6 +30,9 @@ from acp.schema import (
     Implementation,
     McpServerStdio,
     ResourceContentBlock,
+    SessionConfigOptionSelect,
+    SessionConfigSelectOption,
+    SetSessionConfigOptionResponse,
     SseMcpServer,
     TextContentBlock,
     Usage,
@@ -81,7 +84,18 @@ class OpenClawNativeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="openclaw-native", version="0.1.0rc1"),
+            agent_info=Implementation(name="openclaw-native", version="0.1.0rc2"),
+        )
+
+    def model_option(self) -> SessionConfigOptionSelect:
+        selected = self.model_id
+        return SessionConfigOptionSelect(
+            id="model",
+            name="Model",
+            category="model",
+            type="select",
+            current_value=selected,
+            options=[SessionConfigSelectOption(value=selected, name=selected)],
         )
 
     @override
@@ -112,11 +126,23 @@ class OpenClawNativeAgent(Agent):
         self.workspace = cwd
         self.model = model
         self.session_id = uuid4().hex
-        return NewSessionResponse(session_id=self.session_id)
+        return NewSessionResponse(
+            session_id=self.session_id,
+            config_options=[self.model_option()],
+        )
 
     def require_session(self, session_id: str) -> None:
         if session_id != self.session_id:
             raise RequestError.invalid_params()
+
+    @override
+    async def set_config_option(
+        self, config_id: str, session_id: str, value: str | bool, **kwargs: object
+    ) -> SetSessionConfigOptionResponse:
+        self.require_session(session_id)
+        if (config_id, value) != ("model", self.model_id):
+            raise RequestError.invalid_params()
+        return SetSessionConfigOptionResponse(config_options=[self.model_option()])
 
     async def report_usage(self, envelope: dict[str, object]) -> Usage:
         assert self.conn is not None and self.session_id is not None
