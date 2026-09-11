@@ -12,10 +12,11 @@ source at a full commit using its npm and Cargo locks. Pi dependencies use the
 separate npm lock in `build/pi-code-mode/`. The wheel contains the Python ACP
 adapter, Node, Pi, the extension, and their license files.
 
-The build runs a no-inference smoke test with the real packaged Pi and Code
-Mode host against a local scripted HTTP peer. This is a transport and tool test,
-not model inference or benchmark evidence. A second test sets a one-request
-limit and verifies that Pi aborts before a second HTTP request reaches the peer.
+The build runs no-inference smoke tests with the real packaged Pi in direct and
+Code Mode against a local scripted HTTP peer. These are transport and tool
+tests, not model inference or benchmark evidence. A third test sets a
+one-request limit and verifies that Pi aborts before a second HTTP request
+reaches the peer.
 
 Publish a successful wheel as a prerelease asset in this repository. Do not
 replace an existing asset. Create the native harness project with a direct URL

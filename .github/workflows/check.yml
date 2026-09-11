@@ -20,6 +20,7 @@ jobs:
       - run: uv lock --check --project runtimes/openclaw-native
       - run: uv sync --project runtimes/openclaw-native --all-groups --locked
       - run: sh -n tests/canary/code-mode/tests/test.sh
+      - run: sh -n tests/canary/pi-direct/tests/test.sh
       - run: sh -n tests/canary/openclaw-native/tests/test.sh
       - run: uv run ruff check .
       - run: uv run ruff format --check .
