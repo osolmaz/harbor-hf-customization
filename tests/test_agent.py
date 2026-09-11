@@ -57,7 +57,7 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> agent.PiCodeMode
         agent, "pinned_model", lambda requested: {"id": "example/model:provider"}
     )
     monkeypatch.setattr(agent, "command", lambda *args: (["fake"], {}))
-    result = agent.PiCodeModeAgent(tmp_path)
+    result = agent.PiCodeModeAgent("code", tmp_path)
     result.rpc = FakePi()
     result.on_connect(cast(Client, AsyncMock(spec=Client)))
     return result
@@ -67,7 +67,7 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "pi-code-mode"
-    assert initialized.agent_info.version == "0.1.0rc3"
+    assert initialized.agent_info.version == "0.1.0rc4"
     assert initialized.protocol_version == 1
     assert initialized.agent_capabilities is not None
     response = await harness.new_session("/app")
@@ -100,6 +100,15 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     assert harness.cancelled.is_set()
     await harness.close()
     assert isinstance(harness.rpc, FakePi) and harness.rpc.closed
+
+
+async def test_direct_agent_identity(tmp_path: Path) -> None:
+    harness = agent.PiCodeModeAgent("direct", tmp_path)
+    initialized = await harness.initialize(1)
+    assert initialized.agent_info is not None
+    assert initialized.agent_info.name == "pi-direct"
+    assert harness.logs == tmp_path
+    await harness.close()
 
 
 async def test_forwards_tools_and_authoritative_usage(
@@ -274,7 +283,7 @@ async def test_session_start_contract(
     resolve.assert_called_once_with("openai/example/model:provider")
     assert harness.settings is not None
     settings = Path(harness.settings.name)
-    launch.assert_called_once_with(model, settings, harness.logs, None)
+    launch.assert_called_once_with(model, settings, harness.logs, "code", None)
     start.assert_awaited_once_with(
         ["runtime"], "/workspace", {"TEST": "value"}, harness.logs / "pi-events.jsonl"
     )
@@ -310,8 +319,8 @@ async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(agent, "PiCodeModeAgent", constructor)
     monkeypatch.setattr(agent, "run_agent", runner)
     with pytest.raises(RuntimeError, match="transport closed"):
-        await agent.serve()
-    constructor.assert_called_once_with(max_provider_requests=None)
+        await agent.serve("direct")
+    constructor.assert_called_once_with(code_mode="direct", max_provider_requests=None)
     runner.assert_awaited_once_with(harness)
     harness.close.assert_awaited_once_with()
 
@@ -320,7 +329,7 @@ async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_cli_request_bound(monkeypatch: pytest.MonkeyPatch, limit: int | None) -> None:
     import sys
 
-    argv = ["harbor-pi-code-mode"]
+    argv = ["harbor-pi-code-mode", "--code-mode", "code"]
     if limit is not None:
         argv.extend(["--max-provider-requests", str(limit)])
     monkeypatch.setattr(sys, "argv", argv)
@@ -329,7 +338,7 @@ def test_cli_request_bound(monkeypatch: pytest.MonkeyPatch, limit: int | None) -
     monkeypatch.setattr(agent, "serve", serve)
     monkeypatch.setattr(agent.asyncio, "run", run)
     agent.main()
-    serve.assert_called_once_with(limit)
+    serve.assert_called_once_with("code", limit)
     run.assert_called_once_with("awaitable")
 
 
@@ -338,7 +347,15 @@ def test_cli_rejects_invalid_bound(monkeypatch: pytest.MonkeyPatch, limit: str) 
     import sys
 
     monkeypatch.setattr(
-        sys, "argv", ["harbor-pi-code-mode", "--max-provider-requests", limit]
+        sys,
+        "argv",
+        [
+            "harbor-pi-code-mode",
+            "--code-mode",
+            "code",
+            "--max-provider-requests",
+            limit,
+        ],
     )
     with pytest.raises(SystemExit) as error:
         agent.main()

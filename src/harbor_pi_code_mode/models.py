@@ -1,6 +1,7 @@
 """Configure Pi's native provider with authoritative model and HF price data."""
 
 import json
+from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
@@ -8,6 +9,9 @@ from harbor_pi_code_mode.values import count, number, record
 
 ROUTER = "https://router.huggingface.co/v1"
 CATALOG = "https://pi.dev/api/models/providers/huggingface"
+BUNDLED_MODELS = record(
+    json.loads(Path(__file__).with_name("model-catalog.json").read_text())
+)
 
 
 def fetch_json(url: str) -> object:
@@ -36,10 +40,13 @@ def pinned_model(requested: str) -> dict[str, object]:
         or not provider_id
     ):
         raise ValueError("Use an explicit HF model and provider")
-    catalog = fetch_json(CATALOG)
-    if not isinstance(catalog, dict):
-        raise ValueError("Pi model catalog is unavailable")
-    base = record(catalog.get(base_id, {}))
+    base_value = BUNDLED_MODELS.get(base_id)
+    if base_value is None:
+        catalog = fetch_json(CATALOG)
+        if not isinstance(catalog, dict):
+            raise ValueError("Pi model catalog is unavailable")
+        base_value = catalog.get(base_id, {})
+    base = record(base_value)
     if base.get("id") != base_id or base.get("api") != "openai-completions":
         raise ValueError("The requested model is not in Pi's chat-completions catalog")
     data = record(

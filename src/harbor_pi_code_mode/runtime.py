@@ -3,26 +3,34 @@
 import json
 import os
 from pathlib import Path
+from typing import Literal
 
 from harbor_pi_code_mode.models import ROUTER
+
+CodeMode = Literal["direct", "code"]
 
 
 def command(
     model: dict[str, object],
     settings: Path,
     logs: Path,
+    code_mode: CodeMode,
     max_provider_requests: int | None = None,
 ) -> tuple[list[str], dict[str, str]]:
+    if code_mode not in {"direct", "code"}:
+        raise ValueError("Code mode must be direct or code")
     payload = Path(__file__).parent / "payload"
     node = payload / "bin/node"
     pi = payload / "node_modules/@earendil-works/pi-coding-agent/dist/cli.js"
     extension = payload / "node_modules/pi-code-mode/dist/extension/index.js"
-    if not all(path.is_file() for path in (node, pi, extension)):
+    required = (node, pi, extension) if code_mode == "code" else (node, pi)
+    if not all(path.is_file() for path in required):
         raise RuntimeError("The pinned runtime payload is missing")
     settings.mkdir(parents=True, exist_ok=True)
-    config_dir = settings / "config/pi-code-mode"
-    config_dir.mkdir(parents=True, exist_ok=True)
-    (config_dir / "config.json").write_text(json.dumps({"mode": "codex"}))
+    if code_mode == "code":
+        config_dir = settings / "config/pi-code-mode"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        (config_dir / "config.json").write_text(json.dumps({"mode": "codex"}))
     (settings / "models.json").write_text(
         json.dumps(
             {
@@ -73,9 +81,9 @@ def command(
         "--no-skills",
         "--no-prompt-templates",
         "--no-themes",
-        "-e",
-        str(extension),
     ]
+    if code_mode == "code":
+        args.extend(["-e", str(extension)])
     env.pop("HARBOR_PI_MAX_PROVIDER_REQUESTS", None)
     if max_provider_requests is not None:
         if max_provider_requests < 1:
