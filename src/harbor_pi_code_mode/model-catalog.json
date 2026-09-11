@@ -1,0 +1,22 @@
+{
+  "deepseek-ai/DeepSeek-V4.1-Flash": {
+    "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "name": "DeepSeek V4.1 Flash",
+    "api": "openai-completions",
+    "reasoning": true,
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "low",
+      "medium": null,
+      "high": "high",
+      "xhigh": "xhigh",
+      "max": "max"
+    },
+    "input": ["text", "image"],
+    "maxTokens": 384000,
+    "compat": {
+      "supportsDeveloperRole": false
+    }
+  }
+}

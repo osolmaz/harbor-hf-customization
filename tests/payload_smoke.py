@@ -1,4 +1,4 @@
-"""Exercise real Pi and Code Mode against a scripted peer, without inference."""
+"""Exercise real Pi modes against a scripted peer, without inference."""
 
 import asyncio
 import json
@@ -12,7 +12,8 @@ from harbor_pi_code_mode.values import record
 
 
 class ScriptedModel:
-    def __init__(self) -> None:
+    def __init__(self, code_mode: runtime.CodeMode) -> None:
+        self.code_mode = code_mode
         self.calls = 0
 
     async def respond(
@@ -33,26 +34,35 @@ class ScriptedModel:
         request = record(json.loads(await reader.readexactly(length)))
         tools = request.get("tools")
         assert isinstance(tools, list)
-        assert {record(record(tool)["function"])["name"] for tool in tools} == {
-            "exec",
-            "wait",
-        }
+        names = {record(record(tool)["function"])["name"] for tool in tools}
+        expected = (
+            {"exec", "wait"}
+            if self.code_mode == "code"
+            else {"bash", "read", "edit", "write"}
+        )
+        assert names == expected
         self.calls += 1
         delta: dict[str, object] = {"role": "assistant"}
         reason = "stop"
         if self.calls == 1:
-            code = (
-                'text(await tools.exec_command({cmd: "printf code-mode-ok '
-                '> result.txt", yield_time_ms: 1000}));'
-            )
+            if self.code_mode == "code":
+                code = (
+                    'text(await tools.exec_command({cmd: "printf code-mode-ok '
+                    '> result.txt", yield_time_ms: 1000}));'
+                )
+                name = "exec"
+                arguments = {"code": code}
+            else:
+                name = "write"
+                arguments = {"path": "result.txt", "content": "direct-ok"}
             delta["tool_calls"] = [
                 {
                     "index": 0,
-                    "id": "code-mode-smoke",
+                    "id": f"{self.code_mode}-smoke",
                     "type": "function",
                     "function": {
-                        "name": "exec",
-                        "arguments": json.dumps({"code": code}),
+                        "name": name,
+                        "arguments": json.dumps(arguments),
                     },
                 }
             ]
@@ -77,11 +87,13 @@ class ScriptedModel:
         await writer.wait_closed()
 
 
-async def smoke(max_provider_requests: int | None = None) -> None:
-    peer = ScriptedModel()
+async def smoke(
+    code_mode: runtime.CodeMode, max_provider_requests: int | None = None
+) -> None:
+    peer = ScriptedModel(code_mode)
     server = await asyncio.start_server(peer.respond, "127.0.0.1", 0)
     async with server, asyncio.timeout(90):
-        with tempfile.TemporaryDirectory(prefix="code-mode-smoke-") as temporary:
+        with tempfile.TemporaryDirectory(prefix=f"pi-{code_mode}-smoke-") as temporary:
             root = Path(temporary)
             router = f"http://127.0.0.1:{server.sockets[0].getsockname()[1]}/v1"
             model: dict[str, object] = {
@@ -96,26 +108,29 @@ async def smoke(max_provider_requests: int | None = None) -> None:
             }
             with patch.object(runtime, "ROUTER", router):
                 args, env = runtime.command(
-                    model, root / "settings", root, max_provider_requests
+                    model,
+                    root / "settings",
+                    root,
+                    code_mode,
+                    max_provider_requests,
                 )
             env["OPENAI_API_KEY"] = "test-only-scripted-peer"
             rpc = PiRpc()
             try:
                 await rpc.start(args, temporary, env, root / "pi-events.jsonl")
                 await rpc.request("get_state")
-                await rpc.request(
-                    "prompt", message="Create result.txt using Code Mode, then finish."
-                )
+                await rpc.request("prompt", message="Create result.txt, then finish.")
                 while True:
                     event = await rpc.events.get()
                     assert event is not None, "Pi closed before completion"
                     assert not (
                         event.get("type") == "tool_execution_end"
                         and event.get("isError")
-                    ), "Code Mode tool failed"
+                    ), f"Pi {code_mode} tool failed"
                     if event.get("type") == "agent_settled":
                         break
-                assert (root / "result.txt").read_text() == "code-mode-ok"
+                expected = "code-mode-ok" if code_mode == "code" else "direct-ok"
+                assert (root / "result.txt").read_text() == expected
                 expected_calls = 1 if max_provider_requests == 1 else 2
                 assert peer.calls == expected_calls, (
                     f"Expected {expected_calls} HTTP requests, observed {peer.calls}"
@@ -125,11 +140,12 @@ async def smoke(max_provider_requests: int | None = None) -> None:
             finally:
                 await rpc.close()
             print(
-                "Real Pi and Code Mode tool execution passed against "
-                f"a scripted peer; request bound={max_provider_requests}; no inference."
+                f"Real Pi {code_mode} tool execution passed against a scripted peer; "
+                f"request bound={max_provider_requests}; no inference."
             )
 
 
 if __name__ == "__main__":
-    asyncio.run(smoke())
-    asyncio.run(smoke(max_provider_requests=1))
+    asyncio.run(smoke("direct"))
+    asyncio.run(smoke("code"))
+    asyncio.run(smoke("code", max_provider_requests=1))

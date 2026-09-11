@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import cast
 from unittest.mock import Mock
 
 import pytest
@@ -77,7 +78,7 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("PATH", "/usr/bin")
     model: dict[str, object] = {"id": "example/model:provider"}
     settings, logs = tmp_path / "settings", tmp_path / "logs"
-    args, env = runtime.command(model, settings, logs)
+    args, env = runtime.command(model, settings, logs, "code")
     assert args == [
         str(tmp_path / "payload" / files[0]),
         str(tmp_path / "payload" / files[1]),
@@ -133,20 +134,30 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         "mode": "codex"
     }
     assert not (settings / "auth.json").exists()
+
+    direct_settings = tmp_path / "direct-settings"
+    direct_args, _ = runtime.command(model, direct_settings, logs, "direct")
+    assert direct_args == args[:-2]
+    assert not (direct_settings / "config/pi-code-mode/config.json").exists()
+
     # Initialization is idempotent in an already-created settings directory.
-    assert runtime.command(model, settings, logs) == (args, env)
-    limited_args, limited_env = runtime.command(model, settings, logs, 4)
+    assert runtime.command(model, settings, logs, "code") == (args, env)
+    limited_args, limited_env = runtime.command(model, settings, logs, "code", 4)
     assert limited_args == [*args, "-e", str(tmp_path / "request-limit.mjs")]
     assert limited_env == {**env, "HARBOR_PI_MAX_PROVIDER_REQUESTS": "4"}
     monkeypatch.setenv("HARBOR_PI_MAX_PROVIDER_REQUESTS", "999")
     assert (
         "HARBOR_PI_MAX_PROVIDER_REQUESTS"
-        not in runtime.command(model, settings, logs)[1]
+        not in runtime.command(model, settings, logs, "code")[1]
     )
     with pytest.raises(
         ValueError, match="^The provider request limit must be positive$"
     ):
-        runtime.command(model, settings, logs, 0)
+        runtime.command(model, settings, logs, "code", 0)
+    with pytest.raises(ValueError, match="^Code mode must be direct or code$"):
+        runtime.command(
+            model, settings, logs, cast(runtime.CodeMode, cast(object, "invalid"))
+        )
 
 
 @pytest.mark.parametrize("missing", [0, 1, 2])
@@ -165,4 +176,4 @@ def test_each_payload_component_required(
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
     with pytest.raises(RuntimeError, match="^The pinned runtime payload is missing$"):
-        runtime.command({}, tmp_path / "settings", tmp_path)
+        runtime.command({}, tmp_path / "settings", tmp_path, "code")

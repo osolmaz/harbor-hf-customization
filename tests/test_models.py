@@ -24,6 +24,11 @@ PROVIDER = {
 }
 
 
+@pytest.fixture(autouse=True)
+def empty_bundled_catalog(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(models, "BUNDLED_MODELS", {})
+
+
 @pytest.mark.parametrize("route", ["openai", "huggingface"])
 def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch, route: str) -> None:
     monkeypatch.setattr(
@@ -71,6 +76,47 @@ def test_native_model_metadata(monkeypatch: pytest.MonkeyPatch, route: str) -> N
 def test_invalid_model_routes(value: str) -> None:
     with pytest.raises(ValueError, match="^Use an explicit HF model and provider$"):
         models.pinned_model(value)
+
+
+def test_deepseek_v41_flash_contract() -> None:
+    model = record(
+        json.loads(Path(models.__file__).with_name("model-catalog.json").read_text())
+    )["deepseek-ai/DeepSeek-V4.1-Flash"]
+    assert model == {
+        "id": "deepseek-ai/DeepSeek-V4.1-Flash",
+        "name": "DeepSeek V4.1 Flash",
+        "api": "openai-completions",
+        "reasoning": True,
+        "thinkingLevelMap": {
+            "off": "none",
+            "minimal": None,
+            "low": "low",
+            "medium": None,
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": "max",
+        },
+        "input": ["text", "image"],
+        "maxTokens": 384000,
+        "compat": {"supportsDeveloperRole": False},
+    }
+
+
+def test_bundled_model_does_not_require_remote_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base = {**BASE, "id": "bundled/model"}
+    monkeypatch.setattr(models, "BUNDLED_MODELS", {"bundled/model": base})
+
+    def fetch(url: str) -> object:
+        if url == models.CATALOG:
+            raise AssertionError("The remote catalog must not be requested")
+        return {"data": {"providers": [PROVIDER]}}
+
+    monkeypatch.setattr(models, "fetch_json", fetch)
+    result = models.pinned_model("openai/bundled/model:provider")
+    assert result["id"] == "bundled/model:provider"
+    assert result["maxTokens"] == 1000
 
 
 @pytest.mark.parametrize(
@@ -131,7 +177,9 @@ def test_isolated_native_settings(
         path.touch()
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-secret")
     settings = tmp_path / "settings"
-    args, env = runtime.command({"id": "example/model:provider"}, settings, tmp_path)
+    args, env = runtime.command(
+        {"id": "example/model:provider"}, settings, tmp_path, "code"
+    )
     assert env["OPENAI_API_KEY"] == "test-only-secret"
     assert "--no-extensions" in args and "--mode" in args
     assert str(tmp_path / "payload/bin/node") == args[0]
@@ -184,4 +232,4 @@ def test_metadata_errors_are_actionable(
 def test_missing_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
     with pytest.raises(RuntimeError, match="payload"):
-        runtime.command({}, tmp_path / "settings", tmp_path)
+        runtime.command({}, tmp_path / "settings", tmp_path, "code")

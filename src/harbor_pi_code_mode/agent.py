@@ -44,7 +44,7 @@ from acp.schema import (
 
 from harbor_pi_code_mode.models import pinned_model
 from harbor_pi_code_mode.rpc import PiRpc
-from harbor_pi_code_mode.runtime import command
+from harbor_pi_code_mode.runtime import CodeMode, command
 from harbor_pi_code_mode.values import count, number, record
 
 PromptBlock = (
@@ -58,10 +58,15 @@ PromptBlock = (
 
 class PiCodeModeAgent(Agent):
     def __init__(
-        self, logs: Path | None = None, max_provider_requests: int | None = None
+        self,
+        code_mode: CodeMode,
+        logs: Path | None = None,
+        max_provider_requests: int | None = None,
     ) -> None:
+        self.code_mode = code_mode
         self.max_provider_requests = max_provider_requests
-        self.logs = logs or Path("/logs/agent/pi-code-mode")
+        name = "pi-code-mode" if code_mode == "code" else "pi-direct"
+        self.logs = logs or Path(f"/logs/agent/{name}")
         self.conn: Client | None = None
         self.rpc = PiRpc()
         self.session_id: str | None = None
@@ -86,7 +91,10 @@ class PiCodeModeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="pi-code-mode", version="0.1.0rc3"),
+            agent_info=Implementation(
+                name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
+                version="0.1.0rc4",
+            ),
         )
 
     def options(self) -> list[SessionConfigOptionSelect]:
@@ -117,10 +125,14 @@ class PiCodeModeAgent(Agent):
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError("The inference credential is not configured")
         model = await asyncio.to_thread(pinned_model, self.model_id)
-        self.settings = tempfile.TemporaryDirectory(prefix="pi-code-mode-")
+        self.settings = tempfile.TemporaryDirectory(prefix=f"pi-{self.code_mode}-")
         self.logs.mkdir(parents=True, exist_ok=True)
         args, env = command(
-            model, Path(self.settings.name), self.logs, self.max_provider_requests
+            model,
+            Path(self.settings.name),
+            self.logs,
+            self.code_mode,
+            self.max_provider_requests,
         )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
@@ -285,8 +297,10 @@ class PiCodeModeAgent(Agent):
             self.settings.cleanup()
 
 
-async def serve(max_provider_requests: int | None = None) -> None:
-    agent = PiCodeModeAgent(max_provider_requests=max_provider_requests)
+async def serve(code_mode: CodeMode, max_provider_requests: int | None = None) -> None:
+    agent = PiCodeModeAgent(
+        code_mode=code_mode, max_provider_requests=max_provider_requests
+    )
     try:
         await run_agent(agent)
     finally:
@@ -295,8 +309,9 @@ async def serve(max_provider_requests: int | None = None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--code-mode", choices=("direct", "code"), required=True)
     parser.add_argument("--max-provider-requests", type=int)
     args = parser.parse_args()
     if args.max_provider_requests is not None and args.max_provider_requests < 1:
         parser.error("--max-provider-requests must be positive")
-    asyncio.run(serve(args.max_provider_requests))
+    asyncio.run(serve(args.code_mode, args.max_provider_requests))
