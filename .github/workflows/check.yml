@@ -51,9 +51,9 @@ jobs:
         working-directory: build/pi-code-mode
       - run: npm audit --audit-level=low
         working-directory: build/pi-code-mode
-      - run: build/pi-code-mode/node_modules/.bin/biome check src/harbor_pi_code_mode/request-limit.mjs tests/request-limit.test.mjs
-      - run: build/pi-code-mode/node_modules/.bin/tsc --allowJs --checkJs --noEmit --strict --module nodenext --target es2023 --types node --typeRoots build/pi-code-mode/node_modules/@types src/harbor_pi_code_mode/request-limit.mjs
-      - run: node --test tests/request-limit.test.mjs
+      - run: build/pi-code-mode/node_modules/.bin/biome check src/harbor_pi_code_mode/request-limit.mjs src/harbor_pi_code_mode/continue-on-truncation.mjs tests/request-limit.test.mjs tests/continue-on-truncation.test.mjs
+      - run: build/pi-code-mode/node_modules/.bin/tsc --allowJs --checkJs --noEmit --strict --module nodenext --target es2023 --types node --typeRoots build/pi-code-mode/node_modules/@types src/harbor_pi_code_mode/request-limit.mjs src/harbor_pi_code_mode/continue-on-truncation.mjs
+      - run: node --test tests/request-limit.test.mjs tests/continue-on-truncation.test.mjs
   pi-runtime:
     runs-on: ubuntu-latest
     timeout-minutes: 40

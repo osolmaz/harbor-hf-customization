@@ -31,6 +31,23 @@ Each directory under `harnesses/` contains native agent manifests, a
 that directory through Harbor's `agents[].kwargs.source.source_dir`. A hosted
 service must approve the exact source before it can receive credentials.
 
+### Truncated turns continue
+
+A provider can cut a reply off at its output limit. Pi keeps running when that
+truncated reply carries tool calls, and stops when it carries only reasoning, so
+a task can end with no deliverable and score zero. The runtime loads
+`continue-on-truncation.mjs`, which queues one follow-up instruction per
+truncated turn.
+
+- `HARBOR_PI_CONTINUE_LIMIT` sets the follow-ups allowed in one session. The
+default is 2. Zero disables the extension.
+- `HARBOR_PI_CONTINUE_THINKING` optionally sets a Pi thinking level such as
+`low` before each follow-up. Unset leaves the level unchanged.
+
+`tests/continue-on-truncation.test.mjs` covers the bound, ignored turns, the
+session reset, and unusable values. Record the declared values with any run that
+uses them.
+
 ### Launch configuration
 
 In a launch form, choose an ACP source agent. Enter this repository's Git URL,

@@ -78,8 +78,7 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("PATH", "/usr/bin")
     model: dict[str, object] = {"id": "example/model:provider"}
     settings, logs = tmp_path / "settings", tmp_path / "logs"
-    args, env = runtime.command(model, settings, logs, "code")
-    assert args == [
+    base_args = [
         str(tmp_path / "payload" / files[0]),
         str(tmp_path / "payload" / files[1]),
         "--mode",
@@ -97,12 +96,22 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         "--no-skills",
         "--no-prompt-templates",
         "--no-themes",
+    ]
+    continuation_args = [
+        "-e",
+        str(tmp_path / "continue-on-truncation.mjs"),
+    ]
+    args, env = runtime.command(model, settings, logs, "code")
+    assert args == [
+        *base_args,
         "-e",
         str(tmp_path / "payload" / files[2]),
+        *continuation_args,
     ]
     assert {
         key: env[key]
         for key in [
+            "HARBOR_PI_CONTINUE_LIMIT",
             "PI_CODING_AGENT_DIR",
             "PI_OFFLINE",
             "PI_TELEMETRY",
@@ -110,6 +119,7 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
             "PATH",
         ]
     } == {
+        "HARBOR_PI_CONTINUE_LIMIT": "2",
         "PI_CODING_AGENT_DIR": str(settings),
         "PI_OFFLINE": "1",
         "PI_TELEMETRY": "0",
@@ -137,7 +147,7 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 
     direct_settings = tmp_path / "direct-settings"
     direct_args, _ = runtime.command(model, direct_settings, logs, "direct")
-    assert direct_args == args[:-2]
+    assert direct_args == [*base_args, *continuation_args]
     assert not (direct_settings / "config/pi-code-mode/config.json").exists()
 
     # Initialization is idempotent in an already-created settings directory.
@@ -158,6 +168,45 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         runtime.command(
             model, settings, logs, cast(runtime.CodeMode, cast(object, "invalid"))
         )
+
+
+def test_continuation_limit_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    payload = tmp_path / "payload"
+    for file in (
+        "bin/node",
+        "node_modules/@earendil-works/pi-coding-agent/dist/cli.js",
+        "node_modules/pi-code-mode/dist/extension/index.js",
+    ):
+        path = payload / file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    model: dict[str, object] = {"id": "example/model:provider"}
+    guard = str(tmp_path / "continue-on-truncation.mjs")
+    assert runtime.continuation_limit() == runtime.DEFAULT_CONTINUATION_LIMIT
+    monkeypatch.setenv("HARBOR_PI_CONTINUE_LIMIT", "5")
+    args, env = runtime.command(model, tmp_path / "settings", tmp_path / "logs", "code")
+    assert args[-2:] == ["-e", guard]
+    assert env["HARBOR_PI_CONTINUE_LIMIT"] == "5"
+    assert runtime.continuation_limit() == 5
+    monkeypatch.setenv("HARBOR_PI_CONTINUE_LIMIT", "0")
+    args, env = runtime.command(
+        model, tmp_path / "other-settings", tmp_path / "logs", "code"
+    )
+    assert guard not in args
+    assert env["HARBOR_PI_CONTINUE_LIMIT"] == "0"
+    monkeypatch.setenv("HARBOR_PI_CONTINUE_LIMIT", "two")
+    assert guard not in args
+    with pytest.raises(
+        ValueError, match="^The continuation limit must be a nonnegative integer$"
+    ):
+        runtime.continuation_limit()
+    with pytest.raises(
+        ValueError, match="^The continuation limit must be a nonnegative integer$"
+    ):
+        runtime.command(model, tmp_path / "third-settings", tmp_path / "logs", "code")
 
 
 @pytest.mark.parametrize("missing", [0, 1, 2])

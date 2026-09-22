@@ -8,6 +8,15 @@ from typing import Literal
 from harbor_pi_code_mode.models import ROUTER
 
 CodeMode = Literal["direct", "code"]
+DEFAULT_CONTINUATION_LIMIT = 2
+
+
+def continuation_limit() -> int:
+    """Read the declared continuation bound for a truncated turn."""
+    raw = os.environ.get("HARBOR_PI_CONTINUE_LIMIT", str(DEFAULT_CONTINUATION_LIMIT))
+    if not raw.isdigit():
+        raise ValueError("The continuation limit must be a nonnegative integer")
+    return int(raw)
 
 
 def command(
@@ -57,6 +66,7 @@ def command(
     )
     env: dict[str, str] = {
         **os.environ,
+        "HARBOR_PI_CONTINUE_LIMIT": str(continuation_limit()),
         "PI_CODING_AGENT_DIR": str(settings),
         "PI_OFFLINE": "1",
         "PI_TELEMETRY": "0",
@@ -84,6 +94,8 @@ def command(
     ]
     if code_mode == "code":
         args.extend(["-e", str(extension)])
+    if continuation_limit() > 0:
+        args.extend(["-e", str(Path(__file__).with_name("continue-on-truncation.mjs"))])
     env.pop("HARBOR_PI_MAX_PROVIDER_REQUESTS", None)
     if max_provider_requests is not None:
         if max_provider_requests < 1:
