@@ -93,7 +93,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc4",
+                version="0.1.0rc5",
             ),
         )
 
