@@ -31,6 +31,11 @@ Each directory under `harnesses/` contains native agent manifests, a
 that directory through Harbor's `agents[].kwargs.source.source_dir`. A hosted
 service must approve the exact source before it can receive credentials.
 
+`harnesses/pi-code-mode` pins the published Code Mode runtime.
+`harnesses/pi-qwen27b` pins the named `pi-qwen27b` runtime, which adds the
+continuation guard described next. Each directory exposes a direct-mode manifest
+and a Code Mode manifest, and each of those has a bounded canary variant.
+
 ### Truncated turns continue
 
 A provider can cut a reply off at its output limit. Pi keeps running when that

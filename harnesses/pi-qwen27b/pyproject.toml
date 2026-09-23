@@ -1,0 +1,10 @@
+[project]
+name = "harbor-pi-qwen27b-source"
+version = "0.1.0rc5"
+requires-python = ">=3.12"
+dependencies = [
+    "harbor-pi-code-mode-runtime @ https://github.com/osolmaz/harbor-custom-harnesses/releases/download/pi-qwen27b-0.1.0rc5/harbor_pi_code_mode_runtime-0.1.0rc5-py3-none-linux_x86_64.whl",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]

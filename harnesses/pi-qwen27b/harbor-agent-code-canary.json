@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "pi-qwen27b-code-canary",
+  "version": "0.1.0rc5",
+  "protocol": "acp",
+  "runtime": {
+    "kind": "python-uv",
+    "python": "3.12",
+    "project": ".",
+    "lockfile": "uv.lock",
+    "entrypoint": [
+      "harbor-pi-code-mode",
+      "--code-mode",
+      "code",
+      "--max-provider-requests",
+      "4"
+    ]
+  }
+}
