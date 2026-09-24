@@ -73,7 +73,7 @@ Do not treat an unverified build as a benchmark result.
 ## Pi through localpi
 
 The `--launcher localpi` option starts the same pinned Pi through the bundled
-[`localpi`](https://github.com/osolmaz/localpi) 0.6.2 instead of starting Pi
+[`localpi`](https://github.com/osolmaz/localpi) 0.6.3 instead of starting Pi
 directly. Everything else is unchanged: the same ACP adapter, the same pinned Pi
 and Code Mode extension, and the same HF router route. localpi owns Pi's
 configuration for this launcher, so the harness writes only a model profile.
@@ -92,12 +92,22 @@ configuration for this launcher, so the harness writes only a model profile.
   another provider.
 - localpi writes its own diagnostics to stderr, so Pi's stdout stays a clean
   protocol stream.
+- `--max-output-tokens <n>` caps the reply length the run declares, instead of
+  taking it from the model catalog. A comparison between two harnesses needs the
+  same limit on both sides, and a shorter limit is also how a run reproduces a
+  reply that the limit cut off. The value never rises above the context window.
 - Pi's own settings come from localpi, so this launcher does not set
   `retry.enabled: false`.
 
 Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
 direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin wheel
-`0.1.0rc5`, which is the first wheel that bundles localpi.
+`0.1.0rc6`, which is the first wheel that bundles localpi 0.6.3 and carries the
+reply-limit option.
+
+The directory also holds two manifests for reply-limit experiments:
+`harbor-agent-limit-pi.json` runs plain Pi at 16,384 output tokens, and
+`harbor-agent-limit-localpi.json` runs the same limit with the continuation
+guard. The pair isolates the guard, because every other setting is the same.
 
 ## OpenClaw native runtime
 

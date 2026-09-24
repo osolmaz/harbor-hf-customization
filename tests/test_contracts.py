@@ -293,6 +293,33 @@ def test_localpi_launcher_contract(
         )
 
 
+def test_output_token_limit_caps_the_declared_reply_length(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    model: dict[str, object] = {
+        "id": "example/model:provider",
+        "contextWindow": 128000,
+        "maxTokens": 32768,
+    }
+    settings, logs = tmp_path / "settings", tmp_path / "logs"
+    runtime.command(model, settings, logs, "direct", None, "localpi", 0, 16384)
+    assert json.loads((settings / "model-profile.json").read_text())["client"] == {
+        "context_window": 128000,
+        "max_tokens": 16384,
+    }
+    assert model["maxTokens"] == 32768
+
+    other = tmp_path / "other"
+    runtime.command(model, other, logs, "direct", None, "pi", 0, 999999)
+    providers = json.loads((other / "models.json").read_text())["providers"]
+    assert providers["hf-pinned"]["models"][0]["maxTokens"] == 128000
+    with pytest.raises(ValueError, match="positive"):
+        runtime.command(model, other, logs, "direct", None, "pi", 0, 0)
+
+
 def test_localpi_launcher_requires_its_payload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
