@@ -92,6 +92,11 @@ configuration for this launcher, so the harness writes only a model profile.
 - The run declares no thinking format. The HF router rejects the vendor thinking
   fields that Pi sends for Qwen and DeepSeek models (`chat_template_kwargs`,
   `thinking`), and a rejected request returns no answer at all.
+- The pinned provider is declared without discovery, so localpi uses the exact
+  model id from the run, including its provider suffix, and never substitutes
+  another provider.
+- localpi writes its own diagnostics to stderr, so Pi's stdout stays a clean
+  protocol stream.
 - Pi's own settings come from localpi, so this launcher does not set
   `retry.enabled: false`.
 

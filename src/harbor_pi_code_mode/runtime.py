@@ -169,17 +169,36 @@ def _localpi_command(
     env: dict[str, str],
 ) -> tuple[list[str], dict[str, str]]:
     """Hand Pi's configuration to localpi, which owns it for this launcher."""
+    providers_path = settings / "providers.json"
+    providers_path.write_text(
+        json.dumps(
+            {
+                "providers": {
+                    # Discovery is off so the pinned provider keeps the exact model
+                    # id from the run, including its provider suffix.
+                    PROVIDER: {
+                        "type": "openai-compatible",
+                        "name": "Hugging Face router",
+                        "baseUrl": ROUTER,
+                        "discover": False,
+                    }
+                }
+            }
+        )
+    )
     profile_path = settings / "model-profile.json"
     profile_path.write_text(json.dumps(_model_profile(model)))
     args = [
         str(node),
         str(localpi),
         "--runtime",
-        "openai-compatible",
+        "auto",
+        "--provider",
+        PROVIDER,
+        "--providers-file",
+        str(providers_path),
         "--provider-id",
         PROVIDER,
-        "--base-url",
-        ROUTER,
         "--model",
         str(model["id"]),
         "--api-key",

@@ -197,11 +197,13 @@ def test_localpi_launcher_contract(
         payload_path(tmp_path, LOCALPI_PAYLOAD[0]),
         payload_path(tmp_path, LOCALPI_PAYLOAD[3]),
         "--runtime",
-        "openai-compatible",
+        "auto",
+        "--provider",
+        "hf-pinned",
+        "--providers-file",
+        str(settings / "providers.json"),
         "--provider-id",
         "hf-pinned",
-        "--base-url",
-        "https://router.huggingface.co/v1",
         "--model",
         "example/model:provider",
         "--api-key",
@@ -241,6 +243,16 @@ def test_localpi_launcher_contract(
     assert "PI_CODING_AGENT_DIR" not in env
     assert not (settings / "models.json").exists()
     assert not (settings / "settings.json").exists()
+    assert json.loads((settings / "providers.json").read_text()) == {
+        "providers": {
+            "hf-pinned": {
+                "type": "openai-compatible",
+                "name": "Hugging Face router",
+                "baseUrl": "https://router.huggingface.co/v1",
+                "discover": False,
+            }
+        }
+    }
     assert json.loads((settings / "model-profile.json").read_text()) == {
         "id": "hf-pinned",
         "model": "example/model:provider",
