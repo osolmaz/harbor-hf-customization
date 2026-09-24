@@ -1,5 +1,7 @@
 # Repository instructions
 
+- This repository is the Harbor-HF customization repository: it holds reviewed harness adapters,
+  their pinned runtimes, and the integration code those harnesses need.
 - Keep harness-specific behavior here, not in the Harbor-HF service.
 - Use native Harbor source manifests, uv lockfiles, ACP, and documented Pi APIs.
 - Pin executable dependencies and verify runtime payloads before publication.

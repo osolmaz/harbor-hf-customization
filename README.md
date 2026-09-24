@@ -1,7 +1,12 @@
-# Harbor custom harnesses
+# Harbor-HF customization
 
-This repository contains externally packaged agents for Harbor benchmarks.
-It keeps custom harness code and pinned dependencies outside the Harbor worker.
+This repository holds the reviewed customizations that the Harbor-HF service
+needs but must not contain: externally packaged agent harnesses, their pinned
+runtimes, and the integration code those harnesses require. Harness behavior
+stays here so the control service carries no harness-specific rule.
+
+The repository was named `harbor-custom-harnesses` until 2026-09-24. GitHub
+redirects the previous name, so an existing pinned release URL still resolves.
 
 ## Pi direct and Code Mode
 
@@ -45,7 +50,7 @@ provider. The corresponding native agent fragment is:
   "model_name": "openai/<model-namespace>/<model>:<provider>",
   "kwargs": {
     "source": {
-      "repo_url": "https://github.com/osolmaz/harbor-custom-harnesses.git",
+      "repo_url": "https://github.com/osolmaz/harbor-hf-customization.git",
       "ref": "<full-40-character-commit>",
       "source_dir": "harnesses/pi-code-mode",
       "manifest_path": "harbor-agent-direct.json"
