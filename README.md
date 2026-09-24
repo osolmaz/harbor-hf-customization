@@ -75,6 +75,30 @@ call and confirm that every parent and child Job has stopped.
 See [the build instructions](docs/build.md) to build and verify a runtime wheel.
 Do not treat an unverified build as a benchmark result.
 
+## Pi through localpi
+
+The `--launcher localpi` option starts the same pinned Pi through the bundled
+[`localpi`](https://github.com/osolmaz/localpi) 0.6.2 instead of starting Pi
+directly. Everything else is unchanged: the same ACP adapter, the same pinned Pi
+and Code Mode extension, and the same HF router route. localpi owns Pi's
+configuration for this launcher, so the harness writes only a model profile.
+
+- The provider key is written as the `${OPENAI_API_KEY}` reference. The value
+  stays in the environment and never reaches a configuration file or a process
+  argument.
+- `--continue-on-truncation <n>` continues a reply that the output limit cut off,
+  up to `n` times. A cut-off reply that already asked for a tool is left alone,
+  because Pi runs that tool and continues on its own.
+- The run declares no thinking format. The HF router rejects the vendor thinking
+  fields that Pi sends for Qwen and DeepSeek models (`chat_template_kwargs`,
+  `thinking`), and a rejected request returns no answer at all.
+- Pi's own settings come from localpi, so this launcher does not set
+  `retry.enabled: false`.
+
+Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
+direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin wheel
+`0.1.0rc5`, which is the first wheel that bundles localpi.
+
 ## OpenClaw native runtime
 
 The OpenClaw harness runs the native embedded OpenClaw agent through its stable

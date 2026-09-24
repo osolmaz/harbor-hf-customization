@@ -67,7 +67,7 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "pi-code-mode"
-    assert initialized.agent_info.version == "0.1.0rc4"
+    assert initialized.agent_info.version == "0.1.0rc5"
     assert initialized.protocol_version == 1
     assert initialized.agent_capabilities is not None
     response = await harness.new_session("/app")
@@ -283,7 +283,7 @@ async def test_session_start_contract(
     resolve.assert_called_once_with("openai/example/model:provider")
     assert harness.settings is not None
     settings = Path(harness.settings.name)
-    launch.assert_called_once_with(model, settings, harness.logs, "code", None)
+    launch.assert_called_once_with(model, settings, harness.logs, "code", None, "pi", 0)
     start.assert_awaited_once_with(
         ["runtime"], "/workspace", {"TEST": "value"}, harness.logs / "pi-events.jsonl"
     )
@@ -320,7 +320,12 @@ async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(agent, "run_agent", runner)
     with pytest.raises(RuntimeError, match="transport closed"):
         await agent.serve("direct")
-    constructor.assert_called_once_with(code_mode="direct", max_provider_requests=None)
+    constructor.assert_called_once_with(
+        code_mode="direct",
+        max_provider_requests=None,
+        launcher="pi",
+        continuation_limit=0,
+    )
     runner.assert_awaited_once_with(harness)
     harness.close.assert_awaited_once_with()
 
@@ -338,8 +343,54 @@ def test_cli_request_bound(monkeypatch: pytest.MonkeyPatch, limit: int | None) -
     monkeypatch.setattr(agent, "serve", serve)
     monkeypatch.setattr(agent.asyncio, "run", run)
     agent.main()
-    serve.assert_called_once_with("code", limit)
+    serve.assert_called_once_with("code", limit, "pi", 0)
     run.assert_called_once_with("awaitable")
+
+
+@pytest.mark.parametrize("limit", [0, 2])
+def test_cli_launcher_and_continuation(
+    monkeypatch: pytest.MonkeyPatch, limit: int
+) -> None:
+    import sys
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "harbor-pi-code-mode",
+            "--code-mode",
+            "direct",
+            "--launcher",
+            "localpi",
+            "--continue-on-truncation",
+            str(limit),
+        ],
+    )
+    serve = Mock(return_value="awaitable")
+    monkeypatch.setattr(agent, "serve", serve)
+    monkeypatch.setattr(agent.asyncio, "run", Mock())
+    agent.main()
+    serve.assert_called_once_with("direct", None, "localpi", limit)
+
+
+def test_cli_rejects_a_negative_continuation_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "harbor-pi-code-mode",
+            "--code-mode",
+            "direct",
+            "--continue-on-truncation",
+            "-1",
+        ],
+    )
+    with pytest.raises(SystemExit):
+        agent.main()
 
 
 @pytest.mark.parametrize("limit", ["0", "-1", "bad"])

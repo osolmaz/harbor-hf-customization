@@ -160,6 +160,136 @@ def test_runtime_contract(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
         )
 
 
+def payload_path(tmp_path: Path, file: str) -> str:
+    return str(tmp_path / "payload" / file)
+
+
+def make_payload(tmp_path: Path, files: list[str], missing: int | None = None) -> None:
+    for index, file in enumerate(files):
+        if index != missing:
+            path = tmp_path / "payload" / file
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+
+
+LOCALPI_PAYLOAD = [
+    "bin/node",
+    "node_modules/@earendil-works/pi-coding-agent/dist/cli.js",
+    "node_modules/pi-code-mode/dist/extension/index.js",
+    "node_modules/localpi/dist/src/cli/main.js",
+]
+
+
+def test_localpi_launcher_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    model: dict[str, object] = {
+        "id": "example/model:provider",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+    }
+    settings, logs = tmp_path / "settings", tmp_path / "logs"
+    args, env = runtime.command(model, settings, logs, "direct", None, "localpi", 2)
+    assert args == [
+        payload_path(tmp_path, LOCALPI_PAYLOAD[0]),
+        payload_path(tmp_path, LOCALPI_PAYLOAD[3]),
+        "--runtime",
+        "openai-compatible",
+        "--provider-id",
+        "hf-pinned",
+        "--base-url",
+        "https://router.huggingface.co/v1",
+        "--model",
+        "example/model:provider",
+        "--api-key",
+        "${OPENAI_API_KEY}",
+        "--model-profile",
+        str(settings / "model-profile.json"),
+        "--state-dir",
+        str(settings),
+        "--session-dir",
+        str(logs / "sessions"),
+        "--pi-command",
+        f"{tmp_path / 'payload/bin/node'} {tmp_path / 'payload' / LOCALPI_PAYLOAD[1]}",
+        "--thinking",
+        "high",
+        "--no-approval",
+        "--stats",
+        "off",
+        "--continue-on-truncation",
+        "2",
+        "--mode",
+        "rpc",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-themes",
+    ]
+    assert {
+        key: env[key]
+        for key in ["PI_OFFLINE", "PI_TELEMETRY", "XDG_CONFIG_HOME", "PATH"]
+    } == {
+        "PI_OFFLINE": "1",
+        "PI_TELEMETRY": "0",
+        "XDG_CONFIG_HOME": str(settings / "config"),
+        "PATH": f"{tmp_path / 'payload/bin'}:/usr/bin",
+    }
+    # localpi owns Pi's configuration, so the harness writes only its profile.
+    assert "PI_CODING_AGENT_DIR" not in env
+    assert not (settings / "models.json").exists()
+    assert not (settings / "settings.json").exists()
+    assert json.loads((settings / "model-profile.json").read_text()) == {
+        "id": "hf-pinned",
+        "model": "example/model:provider",
+        "base_url": "https://router.huggingface.co/v1",
+        "capabilities": {"reasoning": False},
+        "client": {"context_window": 128000, "max_tokens": 16384},
+    }
+
+    # Code mode appends its extension, and the request limit appends its own.
+    code_args, _ = runtime.command(model, settings, logs, "code", 4, "localpi")
+    assert code_args[-2:] == ["-e", str(tmp_path / "request-limit.mjs")]
+    assert payload_path(tmp_path, LOCALPI_PAYLOAD[2]) in code_args
+    assert "--continue-on-truncation" not in code_args
+
+    # A model without declared limits keeps localpi's own client settings.
+    bare_args, _ = runtime.command(
+        {"id": "example/model:provider"}, settings, logs, "direct", None, "localpi"
+    )
+    index = args.index("--continue-on-truncation")
+    assert bare_args == args[:index] + args[index + 2 :]
+    assert json.loads((settings / "model-profile.json").read_text()) == {
+        "id": "hf-pinned",
+        "model": "example/model:provider",
+        "base_url": "https://router.huggingface.co/v1",
+        "capabilities": {"reasoning": False},
+    }
+
+    with pytest.raises(ValueError, match="^The continuation limit cannot be negative$"):
+        runtime.command(model, settings, logs, "direct", None, "localpi", -1)
+    with pytest.raises(ValueError, match="^Launcher must be pi or localpi$"):
+        runtime.command(
+            model,
+            settings,
+            logs,
+            "direct",
+            None,
+            cast(runtime.Launcher, cast(object, "invalid")),
+        )
+
+
+def test_localpi_launcher_requires_its_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD, missing=3)
+    with pytest.raises(RuntimeError, match="^The pinned runtime payload is missing$"):
+        runtime.command({}, tmp_path / "settings", tmp_path, "direct", None, "localpi")
+
+
 @pytest.mark.parametrize("missing", [0, 1, 2])
 def test_each_payload_component_required(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing: int
