@@ -89,9 +89,15 @@ configuration for this launcher, so the harness writes only a model profile.
 - `--continue-on-truncation <n>` continues a reply that the output limit cut off,
   up to `n` times. A cut-off reply that already asked for a tool is left alone,
   because Pi runs that tool and continues on its own.
-- The run declares no thinking format. The HF router rejects the vendor thinking
-  fields that Pi sends for Qwen and DeepSeek models (`chat_template_kwargs`,
-  `thinking`), and a rejected request returns no answer at all.
+- The default declares no thinking format, which keeps the provider's own default.
+  `--thinking-format qwen-chat-template` adds the Qwen chat-template field to the
+  pinned model, and `--thinking <off|low|medium|high>` sets Pi's level. Pi then sends
+  `enable_thinking`, so `--thinking off` gives the whole reply budget to the answer.
+  The default level stays `high`.
+- A probe on 2026-09-24 showed that `Qwen/Qwen3.8-27B:novita` honors `enable_thinking`
+  inside `chat_template_kwargs`, and ignores `thinking_budget`, `thinking_token_budget`
+  and `reasoning.max_tokens`. A smaller thinking budget is therefore not available on
+  that route; only thinking on or off.
 - The pinned provider is declared without discovery, so localpi uses the exact
   model id from the run, including its provider suffix, and never substitutes
   another provider.
@@ -106,13 +112,16 @@ configuration for this launcher, so the harness writes only a model profile.
 
 Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
 direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin wheel
-`0.1.0rc6`, which is the first wheel that bundles localpi 0.6.3 and carries the
-reply-limit option.
+`0.1.0rc7`, which bundles localpi 0.6.3 and carries the reply-limit and thinking
+options.
 
-The directory also holds two manifests for reply-limit experiments:
+The directory also holds four manifests for reply-limit experiments:
 `harbor-agent-limit-pi.json` runs plain Pi at 16,384 output tokens, and
 `harbor-agent-limit-localpi.json` runs the same limit with the continuation
 guard. The pair isolates the guard, because every other setting is the same.
+`harbor-agent-think-localpi.json` and `harbor-agent-nothink-localpi.json` repeat
+the guarded run with provider thinking on and off, so the pair isolates the cost
+of thinking inside the same reply limit.
 
 ## OpenClaw native runtime
 

@@ -9,6 +9,8 @@ from harbor_pi_code_mode.models import ROUTER
 
 CodeMode = Literal["direct", "code"]
 Launcher = Literal["pi", "localpi"]
+ThinkingLevel = Literal["off", "low", "medium", "high"]
+ThinkingFormat = Literal["none", "qwen-chat-template"]
 
 PROVIDER = "hf-pinned"
 LIMIT_KEYS = ("contextWindow", "maxTokens")
@@ -23,8 +25,17 @@ def command(
     launcher: Launcher = "pi",
     continuation_limit: int = 0,
     max_output_tokens: int | None = None,
+    thinking: ThinkingLevel = "high",
+    thinking_format: ThinkingFormat = "none",
 ) -> tuple[list[str], dict[str, str]]:
-    _validate(code_mode, launcher, continuation_limit, max_output_tokens)
+    _validate(
+        code_mode,
+        launcher,
+        continuation_limit,
+        max_output_tokens,
+        thinking,
+        thinking_format,
+    )
     model = _limited_model(model, max_output_tokens)
     payload = Path(__file__).parent / "payload"
     node = payload / "bin/node"
@@ -53,9 +64,13 @@ def command(
             payload / "node_modules/localpi/dist/src/cli/main.js",
             forwarded,
             continuation_limit,
+            thinking,
+            thinking_format,
             env,
         )
-    return _pi_command(model, settings, logs, node, pi, forwarded, env)
+    return _pi_command(
+        model, settings, logs, node, pi, forwarded, thinking, thinking_format, env
+    )
 
 
 def _validate(
@@ -63,6 +78,8 @@ def _validate(
     launcher: str,
     continuation_limit: int,
     max_output_tokens: int | None,
+    thinking: str,
+    thinking_format: str,
 ) -> None:
     if code_mode not in {"direct", "code"}:
         raise ValueError("Code mode must be direct or code")
@@ -72,6 +89,10 @@ def _validate(
         raise ValueError("The continuation limit cannot be negative")
     if max_output_tokens is not None and max_output_tokens < 1:
         raise ValueError("The output token limit must be positive")
+    if thinking not in {"off", "low", "medium", "high"}:
+        raise ValueError("Thinking must be off, low, medium or high")
+    if thinking_format not in {"none", "qwen-chat-template"}:
+        raise ValueError("Thinking format must be none or qwen-chat-template")
 
 
 def _limited_model(
@@ -136,6 +157,8 @@ def _pi_command(
     node: Path,
     pi: Path,
     forwarded: list[str],
+    thinking: str,
+    thinking_format: str,
     env: dict[str, str],
 ) -> tuple[list[str], dict[str, str]]:
     env["PI_CODING_AGENT_DIR"] = str(settings)
@@ -147,7 +170,7 @@ def _pi_command(
                         "baseUrl": ROUTER,
                         "api": "openai-completions",
                         "apiKey": "${OPENAI_API_KEY}",
-                        "models": [model],
+                        "models": [_thinking_model(model, thinking_format)],
                     }
                 }
             }
@@ -173,7 +196,7 @@ def _pi_command(
         "--model",
         str(model["id"]),
         "--thinking",
-        "high",
+        thinking,
         "--session-dir",
         str(logs / "sessions"),
         "--no-approve",
@@ -191,6 +214,8 @@ def _localpi_command(
     localpi: Path,
     forwarded: list[str],
     continuation_limit: int,
+    thinking: str,
+    thinking_format: str,
     env: dict[str, str],
 ) -> tuple[list[str], dict[str, str]]:
     """Hand Pi's configuration to localpi, which owns it for this launcher."""
@@ -212,7 +237,7 @@ def _localpi_command(
         )
     )
     profile_path = settings / "model-profile.json"
-    profile_path.write_text(json.dumps(_model_profile(model)))
+    profile_path.write_text(json.dumps(_model_profile(model, thinking_format)))
     args = [
         str(node),
         str(localpi),
@@ -237,7 +262,7 @@ def _localpi_command(
         "--pi-command",
         f"{node} {pi}",
         "--thinking",
-        "high",
+        thinking,
         "--no-approval",
         "--stats",
         "off",
@@ -248,15 +273,12 @@ def _localpi_command(
     return args, env
 
 
-def _model_profile(model: dict[str, object]) -> dict[str, object]:
+def _model_profile(model: dict[str, object], thinking_format: str) -> dict[str, object]:
     profile: dict[str, object] = {
         "id": PROVIDER,
         "model": str(model["id"]),
         "base_url": ROUTER,
-        # The Hugging Face router rejects the vendor thinking fields that Pi
-        # sends for Qwen and DeepSeek models, so the run declares no thinking
-        # format and sends only standard chat-completions fields.
-        "capabilities": {"reasoning": False},
+        "capabilities": _capabilities(thinking_format),
     }
     limits = {key: _limit(model, key) for key in LIMIT_KEYS}
     if limits["contextWindow"] > 0 and limits["maxTokens"] > 0:
@@ -265,6 +287,39 @@ def _model_profile(model: dict[str, object]) -> dict[str, object]:
             "max_tokens": limits["maxTokens"],
         }
     return profile
+
+
+def _capabilities(thinking_format: str) -> dict[str, object]:
+    """Declare what Pi may send about thinking for the pinned model.
+
+    The default sends nothing, which keeps the provider's own default. The Qwen
+    chat-template format lets the run turn thinking off or on, because Pi then
+    sends ``enable_thinking`` with the session's thinking level.
+    """
+    if thinking_format == "qwen-chat-template":
+        return {"reasoning": True, "thinking_format": "qwen-chat-template"}
+    return {"reasoning": False}
+
+
+def _thinking_model(
+    model: dict[str, object], thinking_format: str
+) -> dict[str, object]:
+    """Add the declared thinking format to the pinned model definition.
+
+    Pi then sends ``enable_thinking`` inside ``chat_template_kwargs``, so the
+    run's thinking level decides whether the provider thinks. The default keeps
+    the catalog entry exactly as the live catalog published it.
+    """
+    if thinking_format != "qwen-chat-template":
+        return model
+    patched = dict(model)
+    patched["reasoning"] = True
+    compat = model.get("compat")
+    patched["compat"] = {
+        **(compat if isinstance(compat, dict) else {}),
+        "thinkingFormat": "qwen-chat-template",
+    }
+    return patched
 
 
 def _limit(model: dict[str, object], key: str) -> int:

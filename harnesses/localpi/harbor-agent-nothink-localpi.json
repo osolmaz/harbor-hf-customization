@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "id": "pi-localpi-limit",
+  "id": "pi-localpi-nothink",
   "version": "0.1.0rc7",
   "protocol": "acp",
   "runtime": {
@@ -17,7 +17,11 @@
       "--continue-on-truncation",
       "2",
       "--max-output-tokens",
-      "16384"
+      "16384",
+      "--thinking",
+      "off",
+      "--thinking-format",
+      "qwen-chat-template"
     ]
   }
 }

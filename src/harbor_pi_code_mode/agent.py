@@ -44,7 +44,13 @@ from acp.schema import (
 
 from harbor_pi_code_mode.models import pinned_model
 from harbor_pi_code_mode.rpc import PiRpc
-from harbor_pi_code_mode.runtime import CodeMode, Launcher, command
+from harbor_pi_code_mode.runtime import (
+    CodeMode,
+    Launcher,
+    ThinkingFormat,
+    ThinkingLevel,
+    command,
+)
 from harbor_pi_code_mode.values import count, number, record
 
 PromptBlock = (
@@ -65,12 +71,16 @@ class PiCodeModeAgent(Agent):
         launcher: Launcher = "pi",
         continuation_limit: int = 0,
         max_output_tokens: int | None = None,
+        thinking: ThinkingLevel = "high",
+        thinking_format: ThinkingFormat = "none",
     ) -> None:
         self.code_mode = code_mode
         self.max_provider_requests = max_provider_requests
         self.launcher = launcher
         self.continuation_limit = continuation_limit
         self.max_output_tokens = max_output_tokens
+        self.thinking = thinking
+        self.thinking_format = thinking_format
         name = "pi-code-mode" if code_mode == "code" else "pi-direct"
         self.logs = logs or Path(f"/logs/agent/{name}")
         self.conn: Client | None = None
@@ -99,7 +109,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc6",
+                version="0.1.0rc7",
             ),
         )
 
@@ -142,6 +152,8 @@ class PiCodeModeAgent(Agent):
             self.launcher,
             self.continuation_limit,
             self.max_output_tokens,
+            self.thinking,
+            self.thinking_format,
         )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
@@ -312,6 +324,8 @@ async def serve(
     launcher: Launcher = "pi",
     continuation_limit: int = 0,
     max_output_tokens: int | None = None,
+    thinking: ThinkingLevel = "high",
+    thinking_format: ThinkingFormat = "none",
 ) -> None:
     agent = PiCodeModeAgent(
         code_mode=code_mode,
@@ -319,6 +333,8 @@ async def serve(
         launcher=launcher,
         continuation_limit=continuation_limit,
         max_output_tokens=max_output_tokens,
+        thinking=thinking,
+        thinking_format=thinking_format,
     )
     try:
         await run_agent(agent)
@@ -333,6 +349,14 @@ def main() -> None:
     parser.add_argument("--launcher", choices=("pi", "localpi"), default="pi")
     parser.add_argument("--continue-on-truncation", type=int, default=0)
     parser.add_argument("--max-output-tokens", type=int)
+    parser.add_argument(
+        "--thinking", choices=("off", "low", "medium", "high"), default="high"
+    )
+    parser.add_argument(
+        "--thinking-format",
+        choices=("none", "qwen-chat-template"),
+        default="none",
+    )
     args = parser.parse_args()
     if args.max_provider_requests is not None and args.max_provider_requests < 1:
         parser.error("--max-provider-requests must be positive")
@@ -347,5 +371,7 @@ def main() -> None:
             args.launcher,
             args.continue_on_truncation,
             args.max_output_tokens,
+            args.thinking,
+            args.thinking_format,
         )
     )

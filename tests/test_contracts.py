@@ -293,6 +293,103 @@ def test_localpi_launcher_contract(
         )
 
 
+def test_thinking_options_reach_localpi_and_its_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    model: dict[str, object] = {
+        "id": "example/model:provider",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+    }
+    settings, logs = tmp_path / "settings", tmp_path / "logs"
+    args, _ = runtime.command(
+        model,
+        settings,
+        logs,
+        "direct",
+        None,
+        "localpi",
+        0,
+        16384,
+        "off",
+        "qwen-chat-template",
+    )
+    assert args[args.index("--thinking") + 1] == "off"
+    assert json.loads((settings / "model-profile.json").read_text())[
+        "capabilities"
+    ] == {
+        "reasoning": True,
+        "thinking_format": "qwen-chat-template",
+    }
+
+    # The default keeps the provider's own thinking behavior and the catalog entry.
+    default_args, _ = runtime.command(model, settings, logs, "direct", None, "localpi")
+    assert default_args[default_args.index("--thinking") + 1] == "high"
+    assert json.loads((settings / "model-profile.json").read_text())[
+        "capabilities"
+    ] == {"reasoning": False}
+    assert model == {
+        "id": "example/model:provider",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+    }
+
+    for level, format_name in (("shout", "none"), ("off", "guessed")):
+        with pytest.raises(ValueError):
+            runtime.command(
+                model,
+                settings,
+                logs,
+                "direct",
+                None,
+                "localpi",
+                0,
+                None,
+                cast(runtime.ThinkingLevel, cast(object, level)),
+                cast(runtime.ThinkingFormat, cast(object, format_name)),
+            )
+
+
+def test_thinking_format_patches_the_pi_launcher_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    model: dict[str, object] = {
+        "id": "example/model:provider",
+        "reasoning": True,
+        "compat": {"supportsStrictMode": True},
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+    }
+    settings, logs = tmp_path / "settings", tmp_path / "logs"
+    args, _ = runtime.command(
+        model,
+        settings,
+        logs,
+        "direct",
+        None,
+        "pi",
+        0,
+        None,
+        "off",
+        "qwen-chat-template",
+    )
+    assert args[args.index("--thinking") + 1] == "off"
+    pinned = json.loads((settings / "models.json").read_text())["providers"][
+        "hf-pinned"
+    ]["models"][0]
+    assert pinned["compat"] == {
+        "supportsStrictMode": True,
+        "thinkingFormat": "qwen-chat-template",
+    }
+    assert model["compat"] == {"supportsStrictMode": True}
+
+
 def test_output_token_limit_caps_the_declared_reply_length(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
