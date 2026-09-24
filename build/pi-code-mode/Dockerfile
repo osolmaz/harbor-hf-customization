@@ -12,6 +12,11 @@ RUN git clone --filter=blob:none https://github.com/osolmaz/pi-code-mode.git /sr
     && npm run build
 WORKDIR /repo
 COPY build/pi-code-mode/package*.json /payload/
+# The payload's git dependency is pinned to a public GitHub repository, and
+# npm records it as an ssh URL. Rewrite that to https so the build needs no
+# ssh key.
+RUN git config --system url."https://github.com/".insteadOf "ssh://git@github.com/" \
+    && git config --system url."https://github.com/".insteadOf "git+ssh://git@github.com/"
 RUN cd /payload && npm ci --omit=dev \
     && mkdir -p bin node_modules/pi-code-mode \
     && cp /usr/local/bin/node bin/node \

@@ -44,7 +44,7 @@ from acp.schema import (
 
 from harbor_pi_code_mode.models import pinned_model
 from harbor_pi_code_mode.rpc import PiRpc
-from harbor_pi_code_mode.runtime import CodeMode, command
+from harbor_pi_code_mode.runtime import CodeMode, Launcher, command
 from harbor_pi_code_mode.values import count, number, record
 
 PromptBlock = (
@@ -62,9 +62,13 @@ class PiCodeModeAgent(Agent):
         code_mode: CodeMode,
         logs: Path | None = None,
         max_provider_requests: int | None = None,
+        launcher: Launcher = "pi",
+        continuation_limit: int = 0,
     ) -> None:
         self.code_mode = code_mode
         self.max_provider_requests = max_provider_requests
+        self.launcher = launcher
+        self.continuation_limit = continuation_limit
         name = "pi-code-mode" if code_mode == "code" else "pi-direct"
         self.logs = logs or Path(f"/logs/agent/{name}")
         self.conn: Client | None = None
@@ -93,7 +97,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc4",
+                version="0.1.0rc5",
             ),
         )
 
@@ -133,6 +137,8 @@ class PiCodeModeAgent(Agent):
             self.logs,
             self.code_mode,
             self.max_provider_requests,
+            self.launcher,
+            self.continuation_limit,
         )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
@@ -297,9 +303,17 @@ class PiCodeModeAgent(Agent):
             self.settings.cleanup()
 
 
-async def serve(code_mode: CodeMode, max_provider_requests: int | None = None) -> None:
+async def serve(
+    code_mode: CodeMode,
+    max_provider_requests: int | None = None,
+    launcher: Launcher = "pi",
+    continuation_limit: int = 0,
+) -> None:
     agent = PiCodeModeAgent(
-        code_mode=code_mode, max_provider_requests=max_provider_requests
+        code_mode=code_mode,
+        max_provider_requests=max_provider_requests,
+        launcher=launcher,
+        continuation_limit=continuation_limit,
     )
     try:
         await run_agent(agent)
@@ -311,7 +325,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--code-mode", choices=("direct", "code"), required=True)
     parser.add_argument("--max-provider-requests", type=int)
+    parser.add_argument("--launcher", choices=("pi", "localpi"), default="pi")
+    parser.add_argument("--continue-on-truncation", type=int, default=0)
     args = parser.parse_args()
     if args.max_provider_requests is not None and args.max_provider_requests < 1:
         parser.error("--max-provider-requests must be positive")
-    asyncio.run(serve(args.code_mode, args.max_provider_requests))
+    if args.continue_on_truncation < 0:
+        parser.error("--continue-on-truncation cannot be negative")
+    asyncio.run(
+        serve(
+            args.code_mode,
+            args.max_provider_requests,
+            args.launcher,
+            args.continue_on_truncation,
+        )
+    )
