@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "pi-localpi-direct-canary",
-  "version": "0.1.0rc6",
+  "version": "0.1.0rc7",
   "protocol": "acp",
   "runtime": {
     "kind": "python-uv",
