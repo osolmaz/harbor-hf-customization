@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "id": "pi-localpi-code",
+  "id": "pi-direct-limit",
   "version": "0.1.0rc6",
   "protocol": "acp",
   "runtime": {
@@ -11,11 +11,9 @@
     "entrypoint": [
       "harbor-pi-code-mode",
       "--code-mode",
-      "code",
-      "--launcher",
-      "localpi",
-      "--continue-on-truncation",
-      "2"
+      "direct",
+      "--max-output-tokens",
+      "16384"
     ]
   }
 }

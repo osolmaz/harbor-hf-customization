@@ -22,8 +22,10 @@ def command(
     max_provider_requests: int | None = None,
     launcher: Launcher = "pi",
     continuation_limit: int = 0,
+    max_output_tokens: int | None = None,
 ) -> tuple[list[str], dict[str, str]]:
-    _validate(code_mode, launcher, continuation_limit)
+    _validate(code_mode, launcher, continuation_limit, max_output_tokens)
+    model = _limited_model(model, max_output_tokens)
     payload = Path(__file__).parent / "payload"
     node = payload / "bin/node"
     pi = payload / "node_modules/@earendil-works/pi-coding-agent/dist/cli.js"
@@ -56,13 +58,36 @@ def command(
     return _pi_command(model, settings, logs, node, pi, forwarded, env)
 
 
-def _validate(code_mode: str, launcher: str, continuation_limit: int) -> None:
+def _validate(
+    code_mode: str,
+    launcher: str,
+    continuation_limit: int,
+    max_output_tokens: int | None,
+) -> None:
     if code_mode not in {"direct", "code"}:
         raise ValueError("Code mode must be direct or code")
     if launcher not in {"pi", "localpi"}:
         raise ValueError("Launcher must be pi or localpi")
     if continuation_limit < 0:
         raise ValueError("The continuation limit cannot be negative")
+    if max_output_tokens is not None and max_output_tokens < 1:
+        raise ValueError("The output token limit must be positive")
+
+
+def _limited_model(
+    model: dict[str, object], max_output_tokens: int | None
+) -> dict[str, object]:
+    """Cap the declared reply length, so a run can hold one limit fixed.
+
+    Pi otherwise takes the reply limit from the model catalog. A comparison
+    between two harnesses needs the same limit on both sides, and a shorter
+    limit is also how a run reproduces a reply that the limit cut off.
+    """
+    if max_output_tokens is None:
+        return model
+    context = _limit(model, "contextWindow")
+    limit = min(max_output_tokens, context) if context > 0 else max_output_tokens
+    return {**model, "maxTokens": limit}
 
 
 def _require_payload(payload: Path, code_mode: CodeMode, launcher: Launcher) -> None:

@@ -64,11 +64,13 @@ class PiCodeModeAgent(Agent):
         max_provider_requests: int | None = None,
         launcher: Launcher = "pi",
         continuation_limit: int = 0,
+        max_output_tokens: int | None = None,
     ) -> None:
         self.code_mode = code_mode
         self.max_provider_requests = max_provider_requests
         self.launcher = launcher
         self.continuation_limit = continuation_limit
+        self.max_output_tokens = max_output_tokens
         name = "pi-code-mode" if code_mode == "code" else "pi-direct"
         self.logs = logs or Path(f"/logs/agent/{name}")
         self.conn: Client | None = None
@@ -97,7 +99,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc5",
+                version="0.1.0rc6",
             ),
         )
 
@@ -139,6 +141,7 @@ class PiCodeModeAgent(Agent):
             self.max_provider_requests,
             self.launcher,
             self.continuation_limit,
+            self.max_output_tokens,
         )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
@@ -308,12 +311,14 @@ async def serve(
     max_provider_requests: int | None = None,
     launcher: Launcher = "pi",
     continuation_limit: int = 0,
+    max_output_tokens: int | None = None,
 ) -> None:
     agent = PiCodeModeAgent(
         code_mode=code_mode,
         max_provider_requests=max_provider_requests,
         launcher=launcher,
         continuation_limit=continuation_limit,
+        max_output_tokens=max_output_tokens,
     )
     try:
         await run_agent(agent)
@@ -327,16 +332,20 @@ def main() -> None:
     parser.add_argument("--max-provider-requests", type=int)
     parser.add_argument("--launcher", choices=("pi", "localpi"), default="pi")
     parser.add_argument("--continue-on-truncation", type=int, default=0)
+    parser.add_argument("--max-output-tokens", type=int)
     args = parser.parse_args()
     if args.max_provider_requests is not None and args.max_provider_requests < 1:
         parser.error("--max-provider-requests must be positive")
     if args.continue_on_truncation < 0:
         parser.error("--continue-on-truncation cannot be negative")
+    if args.max_output_tokens is not None and args.max_output_tokens < 1:
+        parser.error("--max-output-tokens must be positive")
     asyncio.run(
         serve(
             args.code_mode,
             args.max_provider_requests,
             args.launcher,
             args.continue_on_truncation,
+            args.max_output_tokens,
         )
     )
