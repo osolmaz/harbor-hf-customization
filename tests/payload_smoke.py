@@ -182,8 +182,13 @@ async def smoke_endpoint() -> None:
                         settled += 1
                 assert len(peer.requests) == 2, peer.requests
                 first, second = peer.requests
-                assert first.get("max_tokens") == 32
-                assert second.get("max_tokens") == 96
+                limits = (first.get("max_tokens"), first.get("max_completion_tokens"))
+                answer_limits = (
+                    second.get("max_tokens"),
+                    second.get("max_completion_tokens"),
+                )
+                assert 32 in limits, limits
+                assert 96 in answer_limits, answer_limits
                 assert (
                     record(second.get("chat_template_kwargs"))["enable_thinking"]
                     is False
