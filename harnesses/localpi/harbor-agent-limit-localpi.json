@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "pi-localpi-limit",
-  "version": "0.1.0rc8",
+  "version": "0.1.0rc9",
   "protocol": "acp",
   "runtime": {
     "kind": "python-uv",

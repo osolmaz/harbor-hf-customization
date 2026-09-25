@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "pi-localpi-llama-cpp-endpoint-cap-canary",
-  "version": "0.1.0rc8",
+  "version": "0.1.0rc9",
   "protocol": "acp",
   "runtime": {
     "kind": "python-uv",
@@ -17,7 +17,7 @@
       "--endpoint-engine",
       "llama-cpp",
       "--endpoint-context-window",
-      "32768",
+      "65536",
       "--thinking",
       "high",
       "--thinking-format",
