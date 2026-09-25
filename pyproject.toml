@@ -1,6 +1,6 @@
 [project]
 name = "harbor-pi-code-mode-runtime"
-version = "0.1.0rc8"
+version = "0.1.0rc9"
 description = "Pinned Pi ACP runtime with direct and Code Mode tools for Harbor"
 requires-python = ">=3.12"
 license = "MIT"

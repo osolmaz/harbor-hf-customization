@@ -78,7 +78,7 @@ Do not treat an unverified build as a benchmark result.
 ## Pi through localpi
 
 The `--launcher localpi` option starts the same pinned Pi through the bundled
-[`localpi`](https://github.com/osolmaz/localpi) 0.7.0 instead of starting Pi
+[`localpi`](https://github.com/osolmaz/localpi) 0.8.1 instead of starting Pi
 directly. Everything else is unchanged: the same ACP adapter, the same pinned Pi
 and Code Mode extension, and the same HF router route. localpi owns Pi's
 configuration for this launcher, so the harness writes only a model profile.
@@ -112,7 +112,7 @@ configuration for this launcher, so the harness writes only a model profile.
 
 Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
 direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin candidate wheel
-`0.1.0rc8`, which bundles localpi 0.7.0 and carries the reply-limit and thinking
+`0.1.0rc9`, which bundles localpi 0.8.1 and carries the reply-limit and thinking
 options.
 
 The directory also holds four manifests for reply-limit experiments:
@@ -127,9 +127,9 @@ of thinking inside the same reply limit.
 
 The router manifests above still use the HF router. They do **not** run either
 endpoint or set a thinking cap. The opt-in endpoint path is in candidate wheel
-`0.1.0rc8`, which bundles localpi 0.7.0. The harness checks for cap support
-and fails instead of silently running without it. The wheel has passed a
-scripted local endpoint test, but not a live endpoint canary. Do not use it
+`0.1.0rc9`, which bundles localpi 0.8.1. The harness checks for cap support
+and fails instead of silently running without it. The wheel must pass a
+scripted local endpoint test and a live endpoint canary before wider use. Do not use it
 for a full hosted endpoint run until an approved live canary passes. A host
 without a provider dollar cap can be used for that canary under the approved
 cumulative limit with a priced, attended pause deadline and verified shutdown.
