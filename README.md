@@ -123,6 +123,43 @@ guard. The pair isolates the guard, because every other setting is the same.
 the guarded run with provider thinking on and off, so the pair isolates the cost
 of thinking inside the same reply limit.
 
+### Reviewed endpoint thinking cap (not released)
+
+The router manifests above still use the HF router. They do **not** run either
+endpoint or set a thinking cap. The endpoint path is opt-in and is not available
+in the currently pinned localpi 0.6.3 wheel. A new reviewed wheel must bundle
+a localpi release with endpoint-cap support before a hosted run. The harness
+checks that support and fails instead of silently running without a cap.
+
+For an endpoint run, select the ACP source agent through a reviewed Harbor-HF
+endpoint connection. The connection supplies `OPENAI_BASE_URL` and
+`OPENAI_API_KEY` in the task environment. Do not copy the key or replace the
+reviewed URL with a router URL. Set these harness arguments in its pinned
+manifest:
+
+```text
+--launcher localpi --endpoint-engine vllm --thinking high
+--endpoint-context-window <verified-window> --max-output-tokens 16384
+--thinking-budget 8000 --thinking-format qwen-chat-template
+```
+
+Use `--endpoint-engine llama-cpp` for a llama.cpp endpoint. Specify the model
+as `openai/<exact-id-from-endpoint-/models>`. The harness checks that exact ID
+against the endpoint's `/models` list. It does not use router model prices or
+metadata. Set the context window from the deployed endpoint, not a catalog
+estimate. `--thinking-format qwen-chat-template` is for an endpoint that
+supports that option; leave it as `none` for a server that does not.
+
+The cap keeps thinking on and limits the first request's *total* output to
+8,000 tokens. When that request ends in thinking only, localpi asks for the
+answer with at most 8,384 tokens from the 16,384-token request limit. It is
+not an exact thinking-token counter. The endpoint must honor the limit and
+report a length stop. Check the real endpoint transcript before using the
+result as an eval. Pi reports zero token-price cost for a host billed by time;
+this does **not** mean the host is free. Harbor's run ceiling does not cover
+that host bill. Do not resume a paid endpoint or submit a hosted Job until a
+cumulative host spending limit is verified and approved.
+
 ## OpenClaw native runtime
 
 The OpenClaw harness runs the native embedded OpenClaw agent through its stable

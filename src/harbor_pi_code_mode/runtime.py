@@ -11,6 +11,7 @@ CodeMode = Literal["direct", "code"]
 Launcher = Literal["pi", "localpi"]
 ThinkingLevel = Literal["off", "low", "medium", "high"]
 ThinkingFormat = Literal["none", "qwen-chat-template"]
+EndpointEngine = Literal["vllm", "llama-cpp"]
 
 PROVIDER = "hf-pinned"
 LIMIT_KEYS = ("contextWindow", "maxTokens")
@@ -27,6 +28,10 @@ def command(
     max_output_tokens: int | None = None,
     thinking: ThinkingLevel = "high",
     thinking_format: ThinkingFormat = "none",
+    *,
+    endpoint_engine: EndpointEngine | None = None,
+    endpoint_base_url: str | None = None,
+    thinking_budget: int | None = None,
 ) -> tuple[list[str], dict[str, str]]:
     _validate(
         code_mode,
@@ -36,11 +41,26 @@ def command(
         thinking,
         thinking_format,
     )
+    if endpoint_engine is not None and (
+        launcher != "localpi"
+        or not endpoint_base_url
+        or thinking_budget is None
+        or thinking_budget < 1
+        or max_output_tokens is None
+        or thinking_budget >= max_output_tokens
+        or thinking == "off"
+    ):
+        raise ValueError(
+            "Endpoint needs localpi, URL, thinking on, and output limit above cap"
+        )
     model = _limited_model(model, max_output_tokens)
     payload = Path(__file__).parent / "payload"
     node = payload / "bin/node"
     pi = payload / "node_modules/@earendil-works/pi-coding-agent/dist/cli.js"
-    _require_payload(payload, code_mode, launcher)
+    if endpoint_engine is None:
+        _require_payload(payload, code_mode, launcher)
+    else:
+        _require_payload(payload, code_mode, launcher, endpoint_engine=endpoint_engine)
     settings.mkdir(parents=True, exist_ok=True)
     if code_mode == "code":
         config_dir = settings / "config/pi-code-mode"
@@ -54,6 +74,27 @@ def command(
         "PATH": f"{payload / 'bin'}:{os.environ.get('PATH', '')}",
     }
     forwarded = _forwarded_flags(payload, code_mode, max_provider_requests, env)
+    if (
+        endpoint_engine is not None
+        and endpoint_base_url is not None
+        and thinking_budget is not None
+    ):
+        return _endpoint_localpi_command(
+            model,
+            settings,
+            logs,
+            node,
+            pi,
+            payload / "node_modules/localpi/dist/src/cli/main.js",
+            forwarded,
+            continuation_limit,
+            thinking,
+            thinking_format,
+            env,
+            endpoint_engine,
+            endpoint_base_url,
+            thinking_budget,
+        )
     if launcher == "localpi":
         return _localpi_command(
             model,
@@ -111,7 +152,13 @@ def _limited_model(
     return {**model, "maxTokens": limit}
 
 
-def _require_payload(payload: Path, code_mode: CodeMode, launcher: Launcher) -> None:
+def _require_payload(
+    payload: Path,
+    code_mode: CodeMode,
+    launcher: Launcher,
+    *,
+    endpoint_engine: EndpointEngine | None = None,
+) -> None:
     required = [
         payload / "bin/node",
         payload / "node_modules/@earendil-works/pi-coding-agent/dist/cli.js",
@@ -122,6 +169,20 @@ def _require_payload(payload: Path, code_mode: CodeMode, launcher: Launcher) -> 
         required.append(payload / "node_modules/localpi/dist/src/cli/main.js")
     if not all(path.is_file() for path in required):
         raise RuntimeError("The pinned runtime payload is missing")
+    if endpoint_engine is not None:
+        # The current published localpi has only a managed llama-server cap. A stale
+        # wheel must never run an uncapped hosted request and still claim the cap.
+        extension = (
+            payload
+            / "node_modules/localpi/dist/src/pi/extension-sources/stop-thinking.js"
+        )
+        if (
+            not extension.is_file()
+            or "endpointThinkingBudget" not in extension.read_text()
+        ):
+            raise RuntimeError(
+                "The pinned localpi does not support endpoint thinking caps"
+            )
 
 
 def _forwarded_flags(
@@ -273,12 +334,104 @@ def _localpi_command(
     return args, env
 
 
-def _model_profile(model: dict[str, object], thinking_format: str) -> dict[str, object]:
+def _endpoint_localpi_command(
+    model: dict[str, object],
+    settings: Path,
+    logs: Path,
+    node: Path,
+    pi: Path,
+    localpi: Path,
+    forwarded: list[str],
+    continuation_limit: int,
+    thinking: str,
+    thinking_format: str,
+    env: dict[str, str],
+    engine: EndpointEngine,
+    base_url: str,
+    thinking_budget: int,
+) -> tuple[list[str], dict[str, str]]:
+    profile_path = settings / "model-profile.json"
+    profile_path.write_text(
+        json.dumps(
+            _model_profile(
+                model,
+                thinking_format,
+                provider=engine,
+                base_url=base_url,
+                endpoint=True,
+            )
+        )
+    )
+    # localpi's built-in providers probe /models without authentication. The harness
+    # already checked the exact model with the reviewed credential. Disable discovery
+    # for this explicit provider, and retain the engine label from its provider type/id.
+    providers_path = settings / "providers.json"
+    providers_path.write_text(
+        json.dumps(
+            {
+                "providers": {
+                    engine: {
+                        "type": "llama-cpp"
+                        if engine == "llama-cpp"
+                        else "openai-compatible",
+                        "name": engine,
+                        "baseUrl": base_url,
+                        "discover": False,
+                    }
+                }
+            }
+        )
+    )
+    args = [
+        str(node),
+        str(localpi),
+        "--runtime",
+        "auto",
+        "--provider",
+        engine,
+        "--providers-file",
+        str(providers_path),
+        "--model",
+        str(model["id"]),
+        "--api-key",
+        "${OPENAI_API_KEY}",
+        "--model-profile",
+        str(profile_path),
+        "--state-dir",
+        str(settings),
+        "--session-dir",
+        str(logs / "sessions"),
+        "--pi-command",
+        f"{node} {pi}",
+        "--thinking",
+        thinking,
+        "--thinking-budget",
+        str(thinking_budget),
+        "--no-approval",
+        "--stats",
+        "off",
+    ]
+    if continuation_limit > 0:
+        args.extend(["--continue-on-truncation", str(continuation_limit)])
+    args.extend(["--mode", "rpc", *forwarded])
+    return args, env
+
+
+def _model_profile(
+    model: dict[str, object],
+    thinking_format: str,
+    *,
+    provider: str = PROVIDER,
+    base_url: str = ROUTER,
+    endpoint: bool = False,
+) -> dict[str, object]:
     profile: dict[str, object] = {
-        "id": PROVIDER,
+        "id": provider,
         "model": str(model["id"]),
-        "base_url": ROUTER,
-        "capabilities": _capabilities(thinking_format),
+        "base_url": base_url,
+        "capabilities": {"reasoning": True}
+        if endpoint and thinking_format == "none"
+        else _capabilities(thinking_format),
     }
     limits = {key: _limit(model, key) for key in LIMIT_KEYS}
     if limits["contextWindow"] > 0 and limits["maxTokens"] > 0:

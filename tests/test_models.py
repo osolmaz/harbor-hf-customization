@@ -1,5 +1,7 @@
 import json
+from io import BytesIO
 from pathlib import Path
+from urllib.request import Request
 
 import pytest
 
@@ -227,6 +229,120 @@ def test_metadata_errors_are_actionable(
     with pytest.raises(ValueError) as error:
         models.pinned_model("openai/example/model:provider")
     assert str(error.value) == expected
+
+
+@pytest.mark.parametrize("engine", ["vllm", "llama-cpp"])
+def test_endpoint_model_and_localpi_route(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, engine: runtime.EndpointEngine
+) -> None:
+    url = "https://reviewed.example/v1"
+    key = "test-only-key"
+
+    class FakeOpener:
+        def open(self, request: Request, timeout: int) -> BytesIO:
+            assert request.full_url == f"{url}/models"
+            assert request.get_header("Authorization") == f"Bearer {key}"
+            assert timeout == 12
+            return BytesIO(b'{"data":[{"id":"example/model"}]}')
+
+    monkeypatch.setattr(models, "build_opener", lambda *handlers: FakeOpener())
+    model = models.endpoint_model("openai/example/model", url, key, 100000, 16384)
+    assert model["id"] == "example/model"
+    assert model["contextWindow"] == 100000
+    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    monkeypatch.setattr(runtime, "_require_payload", lambda *args, **kwargs: None)
+    monkeypatch.setenv("OPENAI_API_KEY", key)
+    args, env = runtime.command(
+        model,
+        tmp_path / "settings",
+        tmp_path,
+        "direct",
+        launcher="localpi",
+        continuation_limit=2,
+        max_output_tokens=16384,
+        endpoint_engine=engine,
+        endpoint_base_url=url,
+        thinking_budget=8000,
+    )
+    assert args[args.index("--runtime") + 1] == "auto"
+    assert args[args.index("--thinking-budget") + 1] == "8000"
+    assert args[args.index("--provider") + 1] == engine
+    assert "--base-url" not in args
+    providers = json.loads((tmp_path / "settings/providers.json").read_text())
+    assert providers["providers"][engine] == {
+        "type": "llama-cpp" if engine == "llama-cpp" else "openai-compatible",
+        "name": engine,
+        "baseUrl": url,
+        "discover": False,
+    }
+    assert args[args.index("--continue-on-truncation") + 1] == "2"
+    profile = json.loads((tmp_path / "settings/model-profile.json").read_text())
+    assert profile["id"] == engine and profile["base_url"] == url
+    assert profile["client"] == {"context_window": 100000, "max_tokens": 16384}
+    assert profile["capabilities"] == {"reasoning": True}
+    assert key not in (tmp_path / "settings/model-profile.json").read_text()
+    assert key not in (tmp_path / "settings/providers.json").read_text()
+    assert env["OPENAI_API_KEY"] == key
+
+
+def test_endpoint_rejects_unreviewed_or_mismatched_routes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeOpener:
+        def open(self, request: object, timeout: int) -> BytesIO:
+            return BytesIO(b'{"data":[{"id":"different/model"}]}')
+
+    monkeypatch.setattr(models, "build_opener", lambda *handlers: FakeOpener())
+    for base_url in [
+        "http://reviewed.example/v1",
+        "https://reviewed.example/v1?bad=1",
+        "https://reviewed.example/other",
+    ]:
+        with pytest.raises(ValueError, match="reviewed HTTPS"):
+            models.endpoint_model(
+                "openai/example/model", base_url, "key", 100000, 16384
+            )
+    with pytest.raises(ValueError, match="did not advertise"):
+        models.endpoint_model(
+            "openai/example/model", "https://reviewed.example/v1", "key", 100000, 16384
+        )
+    with pytest.raises(ValueError, match="output within context"):
+        models.endpoint_model(
+            "openai/example/model", "https://reviewed.example/v1", "key", 8000, 16384
+        )
+
+
+def test_endpoint_requires_answer_room_before_creating_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "_require_payload", lambda *args, **kwargs: None)
+    with pytest.raises(ValueError, match="output limit above cap"):
+        runtime.command(
+            {"id": "example/model", "contextWindow": 100000, "maxTokens": 8000},
+            tmp_path / "settings",
+            tmp_path,
+            "direct",
+            launcher="localpi",
+            endpoint_engine="vllm",
+            endpoint_base_url="https://reviewed.example/v1",
+            thinking_budget=8000,
+            max_output_tokens=8000,
+        )
+    assert not (tmp_path / "settings").exists()
+
+
+def test_old_localpi_payload_cannot_claim_an_endpoint_cap(tmp_path: Path) -> None:
+    payload = tmp_path / "payload"
+    for filename in [
+        "bin/node",
+        "node_modules/@earendil-works/pi-coding-agent/dist/cli.js",
+        "node_modules/localpi/dist/src/cli/main.js",
+    ]:
+        path = payload / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    with pytest.raises(RuntimeError, match="does not support endpoint thinking caps"):
+        runtime._require_payload(payload, "direct", "localpi", endpoint_engine="vllm")
 
 
 def test_missing_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

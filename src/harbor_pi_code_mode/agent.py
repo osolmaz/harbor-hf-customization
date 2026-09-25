@@ -42,10 +42,11 @@ from acp.schema import (
     UsageUpdate,
 )
 
-from harbor_pi_code_mode.models import pinned_model
+from harbor_pi_code_mode.models import endpoint_model, pinned_model
 from harbor_pi_code_mode.rpc import PiRpc
 from harbor_pi_code_mode.runtime import (
     CodeMode,
+    EndpointEngine,
     Launcher,
     ThinkingFormat,
     ThinkingLevel,
@@ -73,6 +74,9 @@ class PiCodeModeAgent(Agent):
         max_output_tokens: int | None = None,
         thinking: ThinkingLevel = "high",
         thinking_format: ThinkingFormat = "none",
+        endpoint_engine: EndpointEngine | None = None,
+        endpoint_context_window: int | None = None,
+        thinking_budget: int | None = None,
     ) -> None:
         self.code_mode = code_mode
         self.max_provider_requests = max_provider_requests
@@ -81,6 +85,9 @@ class PiCodeModeAgent(Agent):
         self.max_output_tokens = max_output_tokens
         self.thinking = thinking
         self.thinking_format = thinking_format
+        self.endpoint_engine = endpoint_engine
+        self.endpoint_context_window = endpoint_context_window
+        self.thinking_budget = thinking_budget
         name = "pi-code-mode" if code_mode == "code" else "pi-direct"
         self.logs = logs or Path(f"/logs/agent/{name}")
         self.conn: Client | None = None
@@ -140,10 +147,40 @@ class PiCodeModeAgent(Agent):
             raise RequestError.invalid_params()
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError("The inference credential is not configured")
-        model = await asyncio.to_thread(pinned_model, self.model_id)
+        base_url = os.environ.get("OPENAI_BASE_URL") if self.endpoint_engine else None
+        if self.endpoint_engine is not None and (
+            self.launcher != "localpi"
+            or self.thinking == "off"
+            or self.thinking_budget is None
+            or self.thinking_budget < 1
+            or self.max_output_tokens is None
+            or self.thinking_budget >= self.max_output_tokens
+        ):
+            raise RuntimeError(
+                "Endpoint cap needs localpi, thinking on, and answer tokens"
+            )
+        if self.endpoint_engine is not None:
+            if (
+                not base_url
+                or self.endpoint_context_window is None
+                or self.max_output_tokens is None
+            ):
+                raise RuntimeError(
+                    "A reviewed endpoint URL and explicit limits are required"
+                )
+            model = await asyncio.to_thread(
+                endpoint_model,
+                self.model_id,
+                base_url,
+                os.environ["OPENAI_API_KEY"],
+                self.endpoint_context_window,
+                self.max_output_tokens,
+            )
+        else:
+            model = await asyncio.to_thread(pinned_model, self.model_id)
         self.settings = tempfile.TemporaryDirectory(prefix=f"pi-{self.code_mode}-")
         self.logs.mkdir(parents=True, exist_ok=True)
-        args, env = command(
+        launch_args = (
             model,
             Path(self.settings.name),
             self.logs,
@@ -155,10 +192,23 @@ class PiCodeModeAgent(Agent):
             self.thinking,
             self.thinking_format,
         )
+        if self.endpoint_engine is None:
+            args, env = command(*launch_args)
+        else:
+            args, env = command(
+                *launch_args,
+                endpoint_engine=self.endpoint_engine,
+                endpoint_base_url=base_url,
+                thinking_budget=self.thinking_budget,
+            )
         await self.rpc.start(args, cwd, env, self.logs / "pi-events.jsonl")
         state = await self.rpc.request("get_state")
         selected = record(state.get("model"))
-        if selected.get("id") != model["id"] or selected.get("provider") != "hf-pinned":
+        expected_provider = self.endpoint_engine or "hf-pinned"
+        if (
+            selected.get("id") != model["id"]
+            or selected.get("provider") != expected_provider
+        ):
             raise RuntimeError("Pi selected a different model or provider")
         self.session_id = uuid4().hex
         return NewSessionResponse(
@@ -326,6 +376,9 @@ async def serve(
     max_output_tokens: int | None = None,
     thinking: ThinkingLevel = "high",
     thinking_format: ThinkingFormat = "none",
+    endpoint_engine: EndpointEngine | None = None,
+    endpoint_context_window: int | None = None,
+    thinking_budget: int | None = None,
 ) -> None:
     agent = PiCodeModeAgent(
         code_mode=code_mode,
@@ -335,6 +388,9 @@ async def serve(
         max_output_tokens=max_output_tokens,
         thinking=thinking,
         thinking_format=thinking_format,
+        endpoint_engine=endpoint_engine,
+        endpoint_context_window=endpoint_context_window,
+        thinking_budget=thinking_budget,
     )
     try:
         await run_agent(agent)
@@ -349,6 +405,9 @@ def main() -> None:
     parser.add_argument("--launcher", choices=("pi", "localpi"), default="pi")
     parser.add_argument("--continue-on-truncation", type=int, default=0)
     parser.add_argument("--max-output-tokens", type=int)
+    parser.add_argument("--endpoint-engine", choices=("vllm", "llama-cpp"))
+    parser.add_argument("--endpoint-context-window", type=int)
+    parser.add_argument("--thinking-budget", type=int)
     parser.add_argument(
         "--thinking", choices=("off", "low", "medium", "high"), default="high"
     )
@@ -364,14 +423,29 @@ def main() -> None:
         parser.error("--continue-on-truncation cannot be negative")
     if args.max_output_tokens is not None and args.max_output_tokens < 1:
         parser.error("--max-output-tokens must be positive")
-    asyncio.run(
-        serve(
-            args.code_mode,
-            args.max_provider_requests,
-            args.launcher,
-            args.continue_on_truncation,
-            args.max_output_tokens,
-            args.thinking,
-            args.thinking_format,
-        )
+    if args.endpoint_context_window is not None and args.endpoint_context_window < 1:
+        parser.error("--endpoint-context-window must be positive")
+    if args.endpoint_engine is None and (
+        args.endpoint_context_window is not None or args.thinking_budget is not None
+    ):
+        parser.error("endpoint context and thinking cap require --endpoint-engine")
+    launch_args = (
+        args.code_mode,
+        args.max_provider_requests,
+        args.launcher,
+        args.continue_on_truncation,
+        args.max_output_tokens,
+        args.thinking,
+        args.thinking_format,
     )
+    if args.endpoint_engine is None:
+        asyncio.run(serve(*launch_args))
+    else:
+        asyncio.run(
+            serve(
+                *launch_args,
+                args.endpoint_engine,
+                args.endpoint_context_window,
+                args.thinking_budget,
+            )
+        )
