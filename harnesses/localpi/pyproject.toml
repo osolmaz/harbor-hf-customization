@@ -1,9 +1,9 @@
 [project]
 name = "harbor-pi-localpi-source"
-version = "0.1.0rc8"
+version = "0.1.0rc9"
 requires-python = ">=3.12"
 dependencies = [
-    "harbor-pi-code-mode-runtime @ https://github.com/osolmaz/harbor-hf-customization/releases/download/pi-code-mode-0.1.0rc8/harbor_pi_code_mode_runtime-0.1.0rc8-py3-none-linux_x86_64.whl",
+    "harbor-pi-code-mode-runtime @ https://github.com/osolmaz/harbor-hf-customization/releases/download/pi-code-mode-0.1.0rc9/harbor_pi_code_mode_runtime-0.1.0rc9-py3-none-linux_x86_64.whl",
 ]
 
 [tool.uv]
