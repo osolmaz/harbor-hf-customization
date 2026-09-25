@@ -127,7 +127,7 @@ of thinking inside the same reply limit.
 
 The OpenClaw harness runs the native embedded OpenClaw agent through its stable
 `agent exec` command. It pins OpenClaw source commit
-`651775ba8d2c7b10f37c5372d3528b41ecfbc804`, Node 24.18.0, the self-contained
+`ec9c1a13db8938e5a3eaa51fca2e981cde2395a9`, Node 24.18.0, the self-contained
 OpenClaw package, and its npm dependency lock in one reviewed wheel.
 
 The two manifests use the same runtime and differ only in the explicit

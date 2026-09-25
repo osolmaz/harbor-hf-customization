@@ -10,8 +10,8 @@ from harbor_openclaw_native.models import NIM_ENDPOINT, endpoint_base_url
 from harbor_openclaw_native.process import OpenClawProcess
 from harbor_openclaw_native.values import record
 
-SOURCE_COMMIT = "651775ba8d2c7b10f37c5372d3528b41ecfbc804"
-OPENCLAW_VERSION = "2026.9.3"
+SOURCE_COMMIT = "ec9c1a13db8938e5a3eaa51fca2e981cde2395a9"
+OPENCLAW_VERSION = "2026.9.5"
 
 
 def payload_root() -> Path:
