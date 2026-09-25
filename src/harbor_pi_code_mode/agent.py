@@ -407,7 +407,7 @@ def main() -> None:
     parser.add_argument("--max-output-tokens", type=int)
     parser.add_argument("--endpoint-engine", choices=("vllm", "llama-cpp"))
     parser.add_argument("--endpoint-context-window", type=int)
-    parser.add_argument("--thinking-budget", type=int)
+    parser.add_argument("--thinking-phase-output-cap", dest="thinking_budget", type=int)
     parser.add_argument(
         "--thinking", choices=("off", "low", "medium", "high"), default="high"
     )

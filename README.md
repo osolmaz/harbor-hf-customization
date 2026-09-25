@@ -140,7 +140,7 @@ manifest:
 ```text
 --launcher localpi --endpoint-engine vllm --thinking high
 --endpoint-context-window <verified-window> --max-output-tokens 16384
---thinking-budget 8000 --thinking-format qwen-chat-template
+--thinking-phase-output-cap 8000 --thinking-format qwen-chat-template
 ```
 
 Use `--endpoint-engine llama-cpp` for a llama.cpp endpoint. Specify the model
