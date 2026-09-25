@@ -84,7 +84,7 @@ class OpenClawNativeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="openclaw-native", version="0.1.0rc5"),
+            agent_info=Implementation(name="openclaw-native", version="0.1.0rc6"),
         )
 
     def model_option(self) -> SessionConfigOptionSelect:

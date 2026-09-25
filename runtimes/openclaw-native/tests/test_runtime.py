@@ -86,7 +86,7 @@ def test_config_and_command(
     assert env["OPENCLAW_TELEMETRY_DISABLED"] == "1"
 
 
-def test_nim_route_uses_xhigh_and_lean_tools(
+def test_nim_route_uses_high_and_lean_tools(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     make_payload(tmp_path, monkeypatch)
@@ -95,7 +95,7 @@ def test_nim_route_uses_xhigh_and_lean_tools(
     model: dict[str, object] = {
         "id": "private/vendor/reviewed-model",
         "reasoning": True,
-        "thinkingLevelMap": {"xhigh": "xhigh"},
+        "thinkingLevelMap": {"high": "high"},
         "compat": {"supportsReasoningEffort": True},
         "contextWindow": 1000000,
         "maxTokens": 65536,
@@ -120,7 +120,7 @@ def test_nim_route_uses_xhigh_and_lean_tools(
         requested_model=requested,
         code_mode="direct",
     )
-    assert args[args.index("--thinking") + 1] == "xhigh"
+    assert args[args.index("--thinking") + 1] == "high"
     assert "--local-model-lean" in args
     assert "--auth-env-only" not in args
 

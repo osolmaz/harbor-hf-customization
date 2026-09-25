@@ -24,7 +24,7 @@ def test_reviewed_nim_route(monkeypatch: pytest.MonkeyPatch) -> None:
         "input": ["text"],
         "contextWindow": 1000000,
         "maxTokens": 65536,
-        "thinkingLevelMap": {"xhigh": "xhigh"},
+        "thinkingLevelMap": {"high": "high"},
         "compat": {"supportsReasoningEffort": True},
     }
     with pytest.raises(ValueError, match="exact reviewed endpoint model"):

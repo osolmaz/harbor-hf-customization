@@ -158,7 +158,7 @@ def command(
         "--code-mode",
         code_mode,
         "--thinking",
-        "xhigh" if nim else "high",
+        "high",
         *nim_flags,
         "--timeout",
         "0",

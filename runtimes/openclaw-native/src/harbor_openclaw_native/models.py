@@ -82,7 +82,7 @@ def pinned_model(requested: str) -> tuple[str, dict[str, object]]:
             "input": ["text"],
             "contextWindow": 1000000,
             "maxTokens": 65536,
-            "thinkingLevelMap": {"xhigh": "xhigh"},
+            "thinkingLevelMap": {"high": "high"},
             "compat": {"supportsReasoningEffort": True},
         }
     base_id, provider_id = _parse_request(requested)
