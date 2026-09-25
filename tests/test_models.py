@@ -247,9 +247,15 @@ def test_endpoint_model_and_localpi_route(
 
     monkeypatch.setattr(models, "build_opener", lambda *handlers: FakeOpener())
     model = models.endpoint_model("openai/example/model", url, key, 100000, 16384)
-    assert model["id"] == "example/model"
-    assert model["contextWindow"] == 100000
-    assert model["cost"] == {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+    assert model == {
+        "id": "example/model",
+        "api": "openai-completions",
+        "reasoning": True,
+        "input": ["text"],
+        "contextWindow": 100000,
+        "maxTokens": 16384,
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    }
     monkeypatch.setattr(runtime, "_require_payload", lambda *args, **kwargs: None)
     monkeypatch.setenv("OPENAI_API_KEY", key)
     args, env = runtime.command(
@@ -295,8 +301,13 @@ def test_endpoint_rejects_unreviewed_or_mismatched_routes(
     monkeypatch.setattr(models, "build_opener", lambda *handlers: FakeOpener())
     for base_url in [
         "http://reviewed.example/v1",
+        "https:///v1",
+        "https://user@reviewed.example/v1",
+        "https://:password@reviewed.example/v1",
         "https://reviewed.example/v1?bad=1",
+        "https://reviewed.example/v1#fragment",
         "https://reviewed.example/other",
+        "https://reviewed.example/v1/other",
     ]:
         with pytest.raises(ValueError, match="reviewed HTTPS"):
             models.endpoint_model(
@@ -306,10 +317,63 @@ def test_endpoint_rejects_unreviewed_or_mismatched_routes(
         models.endpoint_model(
             "openai/example/model", "https://reviewed.example/v1", "key", 100000, 16384
         )
-    with pytest.raises(ValueError, match="output within context"):
-        models.endpoint_model(
-            "openai/example/model", "https://reviewed.example/v1", "key", 8000, 16384
+    for requested in ["other/example/model", "openai/", "example/model"]:
+        with pytest.raises(ValueError, match="explicit openai"):
+            models.endpoint_model(
+                requested, "https://reviewed.example/v1", "key", 100000, 16384
+            )
+    for context, output in [
+        (0, 1),
+        (-1, 1),
+        (True, 1),
+        (1, 0),
+        (1, -1),
+        (1, True),
+        (8000, 16384),
+    ]:
+        with pytest.raises(ValueError, match="output within context"):
+            models.endpoint_model(
+                "openai/example/model",
+                "https://reviewed.example/v1",
+                "key",
+                context,
+                output,
+            )
+
+
+def test_endpoint_model_list_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeOpener:
+        def __init__(self, body: bytes) -> None:
+            self.body = body
+
+        def open(self, request: Request, timeout: int) -> BytesIO:
+            return BytesIO(self.body)
+
+    maximum = 8 * 1024 * 1024
+    for body in [b" " * (maximum + 1), b" " * maximum]:
+        monkeypatch.setattr(
+            models, "build_opener", lambda *handlers, body=body: FakeOpener(body)
         )
+        if len(body) > maximum:
+            with pytest.raises(
+                ValueError, match="Endpoint model list exceeds its limit"
+            ):
+                models.endpoint_model(
+                    "openai/example/model",
+                    "https://reviewed.example/v1",
+                    "key",
+                    100000,
+                    16384,
+                )
+        else:
+            with pytest.raises(json.JSONDecodeError):
+                models.endpoint_model(
+                    "openai/example/model",
+                    "https://reviewed.example/v1",
+                    "key",
+                    100000,
+                    16384,
+                )
 
 
 def test_endpoint_requires_answer_room_before_creating_settings(
