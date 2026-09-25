@@ -1,9 +1,11 @@
 """Configure Pi's native provider with authoritative model and HF price data."""
 
 import json
+from email.message import Message
 from pathlib import Path
-from urllib.parse import quote
-from urllib.request import Request, urlopen
+from typing import IO, override
+from urllib.parse import quote, urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from harbor_pi_code_mode.values import count, number, record
 
@@ -27,6 +29,76 @@ def fetch_json(url: str) -> object:
     if len(body) > 8 * 1024 * 1024:
         raise ValueError("Model metadata exceeds its limit")
     return json.loads(body)
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    @override
+    def redirect_request(
+        self,
+        req: Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: Message,
+        newurl: str,
+    ) -> None:
+        raise ValueError("The endpoint model list redirected")
+
+
+def endpoint_model(
+    requested: str, base_url: str, api_key: str, context_window: int, max_tokens: int
+) -> dict[str, object]:
+    """Bind a reviewed endpoint to the exact model advertised by its /models route.
+
+    Host billing is hourly and not known to Pi's per-token cost calculator.
+    """
+    parts = urlsplit(base_url)
+    if (
+        parts.scheme != "https"
+        or not parts.hostname
+        or parts.username
+        or parts.password
+        or parts.query
+        or parts.fragment
+        or not parts.path.rstrip("/").endswith("/v1")
+    ):
+        raise ValueError("An endpoint requires a reviewed HTTPS /v1 base URL")
+    if not requested.startswith("openai/") or not requested.removeprefix("openai/"):
+        raise ValueError("An endpoint requires an explicit openai/<served-model-id>")
+    if (
+        isinstance(context_window, bool)
+        or context_window <= 0
+        or isinstance(max_tokens, bool)
+        or max_tokens <= 0
+        or max_tokens > context_window
+    ):
+        raise ValueError("Set positive endpoint limits, with output within context")
+    model_id = requested.removeprefix("openai/")
+    request = Request(
+        f"{base_url.rstrip('/')}/models",
+        headers={"Accept": "application/json", "Authorization": f"Bearer {api_key}"},
+    )
+    with build_opener(_NoRedirect()).open(request, timeout=12) as response:
+        body = response.read(8 * 1024 * 1024 + 1)
+    if len(body) > 8 * 1024 * 1024:
+        raise ValueError("Endpoint model list exceeds its limit")
+    listing = record(json.loads(body))
+    available = listing.get("data")
+    if not isinstance(available, list) or not any(
+        record(item).get("id") == model_id for item in available
+    ):
+        raise ValueError("The reviewed endpoint did not advertise the requested model")
+    return {
+        "id": model_id,
+        "api": "openai-completions",
+        "reasoning": True,
+        "input": ["text"],
+        "contextWindow": context_window,
+        "maxTokens": max_tokens,
+        # Endpoint hosts are billed by elapsed time, not by token. This value is
+        # not the host bill; a separate cumulative host limit is required.
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    }
 
 
 def pinned_model(requested: str) -> dict[str, object]:

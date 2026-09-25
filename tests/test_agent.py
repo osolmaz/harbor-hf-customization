@@ -28,6 +28,7 @@ class FakePi(PiRpc):
         super().__init__()
         self.closed = False
         self.calls: list[str] = []
+        self.selected = {"id": "example/model:provider", "provider": "hf-pinned"}
 
     @override
     async def start(
@@ -39,7 +40,7 @@ class FakePi(PiRpc):
     async def request(self, command: str, **values: object) -> dict[str, object]:
         self.calls.append(command)
         if command == "get_state":
-            return {"model": {"id": "example/model:provider", "provider": "hf-pinned"}}
+            return {"model": self.selected}
         if command == "get_session_stats":
             return STATS
         return {}
@@ -56,11 +57,61 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> agent.PiCodeMode
     monkeypatch.setattr(
         agent, "pinned_model", lambda requested: {"id": "example/model:provider"}
     )
-    monkeypatch.setattr(agent, "command", lambda *args: (["fake"], {}))
+    monkeypatch.setattr(agent, "command", lambda *args, **kwargs: (["fake"], {}))
     result = agent.PiCodeModeAgent("code", tmp_path)
     result.rpc = FakePi()
     result.on_connect(cast(Client, AsyncMock(spec=Client)))
     return result
+
+
+async def test_endpoint_uses_only_reviewed_binding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HARBOR_ACP_REQUESTED_MODEL", "openai/example/model")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://reviewed.example/v1")
+    observed: list[object] = []
+
+    def fake_model(*args: object) -> dict[str, object]:
+        observed.extend(args)
+        return {"id": "example/model"}
+
+    monkeypatch.setattr(agent, "endpoint_model", fake_model)
+    monkeypatch.setattr(agent, "command", lambda *args, **kwargs: (["fake"], {}))
+    instance = agent.PiCodeModeAgent(
+        "direct",
+        tmp_path,
+        launcher="localpi",
+        endpoint_engine="vllm",
+        endpoint_context_window=100000,
+        max_output_tokens=16384,
+        thinking_budget=8000,
+    )
+    instance.rpc = FakePi()
+    instance.rpc.selected = {"id": "example/model", "provider": "vllm"}
+    instance.on_connect(cast(Client, AsyncMock(spec=Client)))
+    await instance.new_session("/app")
+    assert observed == [
+        "openai/example/model",
+        "https://reviewed.example/v1",
+        "test-only",
+        100000,
+        16384,
+    ]
+    await instance.close()
+
+    monkeypatch.delenv("OPENAI_BASE_URL")
+    missing = agent.PiCodeModeAgent(
+        "direct",
+        tmp_path,
+        launcher="localpi",
+        endpoint_engine="vllm",
+        endpoint_context_window=100000,
+        max_output_tokens=16384,
+        thinking_budget=8000,
+    )
+    with pytest.raises(RuntimeError, match="reviewed endpoint URL"):
+        await missing.new_session("/app")
 
 
 async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
@@ -330,6 +381,9 @@ async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
         max_output_tokens=None,
         thinking="high",
         thinking_format="none",
+        endpoint_engine=None,
+        endpoint_context_window=None,
+        thinking_budget=None,
     )
     runner.assert_awaited_once_with(harness)
     harness.close.assert_awaited_once_with()
