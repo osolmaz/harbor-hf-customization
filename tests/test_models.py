@@ -270,22 +270,65 @@ def test_endpoint_model_and_localpi_route(
         endpoint_base_url=url,
         thinking_budget=8000,
     )
-    assert args[args.index("--runtime") + 1] == "auto"
-    assert args[args.index("--thinking-phase-output-cap") + 1] == "8000"
-    assert args[args.index("--provider") + 1] == engine
-    assert "--base-url" not in args
+    payload = Path(runtime.__file__).parent / "payload"
+    node = payload / "bin/node"
+    pi = payload / "node_modules/@earendil-works/pi-coding-agent/dist/cli.js"
+    assert args == [
+        str(node),
+        str(payload / "node_modules/localpi/dist/src/cli/main.js"),
+        "--runtime",
+        "auto",
+        "--provider",
+        engine,
+        "--providers-file",
+        str(tmp_path / "settings/providers.json"),
+        "--model",
+        "example/model",
+        "--api-key",
+        "${OPENAI_API_KEY}",
+        "--model-profile",
+        str(tmp_path / "settings/model-profile.json"),
+        "--state-dir",
+        str(tmp_path / "settings"),
+        "--session-dir",
+        str(tmp_path / "sessions"),
+        "--pi-command",
+        f"{node} {pi}",
+        "--thinking",
+        "high",
+        "--thinking-phase-output-cap",
+        "8000",
+        "--no-approval",
+        "--stats",
+        "off",
+        "--continue-on-truncation",
+        "2",
+        "--mode",
+        "rpc",
+        "--no-extensions",
+        "--no-skills",
+        "--no-prompt-templates",
+        "--no-themes",
+    ]
     providers = json.loads((tmp_path / "settings/providers.json").read_text())
-    assert providers["providers"][engine] == {
-        "type": "llama-cpp" if engine == "llama-cpp" else "openai-compatible",
-        "name": engine,
-        "baseUrl": url,
-        "discover": False,
+    assert providers == {
+        "providers": {
+            engine: {
+                "type": "llama-cpp" if engine == "llama-cpp" else "openai-compatible",
+                "name": engine,
+                "baseUrl": url,
+                "discover": False,
+            }
+        }
     }
-    assert args[args.index("--continue-on-truncation") + 1] == "2"
     profile = json.loads((tmp_path / "settings/model-profile.json").read_text())
-    assert profile["id"] == engine and profile["base_url"] == url
-    assert profile["client"] == {"context_window": 100000, "max_tokens": 16384}
-    assert profile["capabilities"] == {"reasoning": True}
+    assert profile == {
+        "id": engine,
+        "model": "example/model",
+        "base_url": url,
+        "capabilities": {"reasoning": True},
+        "client": {"context_window": 100000, "max_tokens": 16384},
+    }
     assert key not in (tmp_path / "settings/model-profile.json").read_text()
     assert key not in (tmp_path / "settings/providers.json").read_text()
     assert env["OPENAI_API_KEY"] == key
