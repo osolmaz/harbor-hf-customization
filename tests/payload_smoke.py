@@ -138,7 +138,9 @@ class ScriptedEndpoint:
         await writer.wait_closed()
 
 
-async def smoke_endpoint() -> None:
+async def smoke_endpoint(
+    max_output_tokens: int, thinking_cap: int, expected_phase_limit: int
+) -> None:
     peer = ScriptedEndpoint()
     server = await asyncio.start_server(peer.respond, "127.0.0.1", 0)
     async with server, asyncio.timeout(90):
@@ -161,11 +163,11 @@ async def smoke_endpoint() -> None:
                 "direct",
                 max_provider_requests=2,
                 launcher="localpi",
-                max_output_tokens=128,
+                max_output_tokens=max_output_tokens,
                 thinking_format="qwen-chat-template",
                 endpoint_engine="vllm",
                 endpoint_base_url=url,
-                thinking_budget=32,
+                thinking_budget=thinking_cap,
             )
             env["OPENAI_API_KEY"] = "test-only-scripted-peer"
             rpc = PiRpc()
@@ -187,8 +189,10 @@ async def smoke_endpoint() -> None:
                     second.get("max_tokens"),
                     second.get("max_completion_tokens"),
                 )
-                assert 32 in limits, limits
-                assert 96 in answer_limits, answer_limits
+                assert expected_phase_limit in limits, limits
+                assert max_output_tokens - expected_phase_limit in answer_limits, (
+                    answer_limits
+                )
                 assert (
                     record(second.get("chat_template_kwargs"))["enable_thinking"]
                     is False
@@ -263,4 +267,5 @@ if __name__ == "__main__":
     asyncio.run(smoke("direct"))
     asyncio.run(smoke("code"))
     asyncio.run(smoke("code", max_provider_requests=1))
-    asyncio.run(smoke_endpoint())
+    asyncio.run(smoke_endpoint(128, 32, 32))
+    asyncio.run(smoke_endpoint(96, 64, 48))
