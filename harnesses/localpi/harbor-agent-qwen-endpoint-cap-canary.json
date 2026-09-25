@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "pi-localpi-qwen-endpoint-cap-canary",
+  "version": "0.1.0rc8",
+  "protocol": "acp",
+  "runtime": {
+    "kind": "python-uv",
+    "python": "3.12",
+    "project": ".",
+    "lockfile": "uv.lock",
+    "entrypoint": [
+      "harbor-pi-code-mode",
+      "--code-mode",
+      "direct",
+      "--launcher",
+      "localpi",
+      "--endpoint-engine",
+      "vllm",
+      "--endpoint-context-window",
+      "131072",
+      "--thinking",
+      "high",
+      "--thinking-format",
+      "qwen-chat-template",
+      "--max-output-tokens",
+      "16384",
+      "--thinking-phase-output-cap",
+      "8000",
+      "--continue-on-truncation",
+      "2"
+    ]
+  }
+}
