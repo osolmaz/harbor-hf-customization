@@ -419,21 +419,39 @@ def test_endpoint_model_list_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None
                 )
 
 
-def test_endpoint_requires_answer_room_before_creating_settings(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "launcher,base_url,thinking,budget,max_tokens",
+    [
+        ("pi", "https://reviewed.example/v1", "high", 8000, 16384),
+        ("localpi", None, "high", 8000, 16384),
+        ("localpi", "https://reviewed.example/v1", "off", 8000, 16384),
+        ("localpi", "https://reviewed.example/v1", "high", None, 16384),
+        ("localpi", "https://reviewed.example/v1", "high", 0, 16384),
+        ("localpi", "https://reviewed.example/v1", "high", 8000, None),
+        ("localpi", "https://reviewed.example/v1", "high", 8000, 8000),
+        ("localpi", "https://reviewed.example/v1", "high", 9000, 8000),
+    ],
+)
+def test_invalid_endpoint_settings_fail_before_creating_files(
+    tmp_path: Path,
+    launcher: runtime.Launcher,
+    base_url: str | None,
+    thinking: runtime.ThinkingLevel,
+    budget: int | None,
+    max_tokens: int | None,
 ) -> None:
-    monkeypatch.setattr(runtime, "_require_payload", lambda *args, **kwargs: None)
-    with pytest.raises(ValueError, match="output limit above cap"):
+    with pytest.raises(ValueError, match="Endpoint needs localpi"):
         runtime.command(
-            {"id": "example/model", "contextWindow": 100000, "maxTokens": 8000},
+            {"id": "example/model", "contextWindow": 100000, "maxTokens": 16384},
             tmp_path / "settings",
             tmp_path,
             "direct",
-            launcher="localpi",
+            launcher=launcher,
+            thinking=thinking,
             endpoint_engine="vllm",
-            endpoint_base_url="https://reviewed.example/v1",
-            thinking_budget=8000,
-            max_output_tokens=8000,
+            endpoint_base_url=base_url,
+            thinking_budget=budget,
+            max_output_tokens=max_tokens,
         )
     assert not (tmp_path / "settings").exists()
 
