@@ -180,6 +180,30 @@ LOCALPI_PAYLOAD = [
 ]
 
 
+def test_qwen_endpoint_canary_manifest_keeps_thinking_on() -> None:
+    manifest = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "harnesses/localpi/harbor-agent-qwen-endpoint-cap-canary.json"
+        ).read_text()
+    )
+    args = manifest["runtime"]["entrypoint"]
+    options = dict(zip(args[1::2], args[2::2], strict=True))
+    assert manifest["version"] == "0.1.0rc8"
+    assert options["--launcher"] == "localpi"
+    assert options["--endpoint-engine"] == "vllm"
+    assert options["--endpoint-context-window"] == "131072"
+    assert options["--thinking"] == "high"
+    assert options["--thinking-format"] == "qwen-chat-template"
+    assert options["--max-output-tokens"] == "16384"
+    assert options["--thinking-phase-output-cap"] == "8000"
+    assert (
+        0
+        < int(options["--thinking-phase-output-cap"])
+        < int(options["--max-output-tokens"])
+    )
+
+
 def test_localpi_launcher_contract(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

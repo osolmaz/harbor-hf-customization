@@ -153,6 +153,11 @@ metadata. Set the context window from the deployed endpoint, not a catalog
 estimate. `--thinking-format qwen-chat-template` is for an endpoint that
 supports that option; leave it as `none` for a server that does not.
 
+`harbor-agent-qwen-endpoint-cap-canary.json` pins these settings for the Qwen
+L40S endpoint's 131,072-token context window. It is a canary manifest, not a
+router manifest or a preset for the full 89-task run. Select the exact model
+reported by that endpoint's `/models` route at launch.
+
 The cap keeps thinking on and limits the first request's *total* output to
 8,000 tokens. When that request ends in thinking only, localpi asks for the
 answer with at most 8,384 tokens from the 16,384-token request limit. It is
