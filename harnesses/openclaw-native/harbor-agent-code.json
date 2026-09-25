@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "openclaw-native-code",
-  "version": "0.1.0rc5",
+  "version": "0.1.0rc6",
   "protocol": "acp",
   "runtime": {
     "kind": "python-uv",
