@@ -130,8 +130,9 @@ endpoint or set a thinking cap. The opt-in endpoint path is in candidate wheel
 `0.1.0rc8`, which bundles localpi 0.7.0. The harness checks for cap support
 and fails instead of silently running without it. The wheel has passed a
 scripted local endpoint test, but not a live endpoint canary. Do not use it
-for a hosted endpoint run until that canary passes under a verified cumulative
-host spending limit.
+for a full hosted endpoint run until an approved live canary passes. A host
+without a provider dollar cap can be used for that canary under the approved
+cumulative limit with a priced, attended pause deadline and verified shutdown.
 
 For an endpoint run, select the ACP source agent through a reviewed Harbor-HF
 endpoint connection. The connection supplies `OPENAI_BASE_URL` and
@@ -159,8 +160,12 @@ not an exact thinking-token counter. The endpoint must honor the limit and
 report a length stop. Check the real endpoint transcript before using the
 result as an eval. Pi reports zero token-price cost for a host billed by time;
 this does **not** mean the host is free. Harbor's run ceiling does not cover
-that host bill. Do not resume a paid endpoint or submit a hosted Job until a
-cumulative host spending limit is verified and approved.
+that host bill. Before resuming a paid host, check its hourly price and the
+remaining approved total, prepare an independent timed pause, and attend the
+run. Pause the host when the run ends or the deadline arrives and verify that
+no paid replica remains. A timed pause is not a provider-enforced dollar cap;
+the invoice may differ from the estimate. Keep the separate Harbor Job cost
+controls in force.
 
 ## OpenClaw native runtime
 
