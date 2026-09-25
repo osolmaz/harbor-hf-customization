@@ -31,13 +31,13 @@ wheels = [
 
 [[package]]
 name = "harbor-openclaw-native-runtime"
-version = "0.1.0rc4"
-source = { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc4/harbor_openclaw_native_runtime-0.1.0rc4-py3-none-linux_x86_64.whl" }
+version = "0.1.0rc5"
+source = { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc5/harbor_openclaw_native_runtime-0.1.0rc5-py3-none-linux_x86_64.whl" }
 dependencies = [
     { name = "agent-client-protocol" },
 ]
 wheels = [
-    { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc4/harbor_openclaw_native_runtime-0.1.0rc4-py3-none-linux_x86_64.whl", hash = "sha256:6eab9105e2f5f16b829f4e6d9bcc83622d8a682c1ec993c6b6435f2f84c5ecb5" },
+    { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc5/harbor_openclaw_native_runtime-0.1.0rc5-py3-none-linux_x86_64.whl", hash = "sha256:d9d95668f2155a7c599c4dc786ffbd21219731e6d958dc37eb48e4cdb9ba321d" },
 ]
 
 [package.metadata]
@@ -45,14 +45,14 @@ requires-dist = [{ name = "agent-client-protocol", specifier = "==0.12.1" }]
 
 [[package]]
 name = "harbor-openclaw-native-source"
-version = "0.1.0rc4"
+version = "0.1.0rc5"
 source = { virtual = "." }
 dependencies = [
     { name = "harbor-openclaw-native-runtime" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "harbor-openclaw-native-runtime", url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc4/harbor_openclaw_native_runtime-0.1.0rc4-py3-none-linux_x86_64.whl" }]
+requires-dist = [{ name = "harbor-openclaw-native-runtime", url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc5/harbor_openclaw_native_runtime-0.1.0rc5-py3-none-linux_x86_64.whl" }]
 
 [[package]]
 name = "pydantic"
