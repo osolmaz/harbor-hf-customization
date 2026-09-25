@@ -178,7 +178,7 @@ def _require_payload(
         )
         if (
             not extension.is_file()
-            or "endpointThinkingBudget" not in extension.read_text()
+            or "thinkingPhaseOutputCap" not in extension.read_text()
         ):
             raise RuntimeError(
                 "The pinned localpi does not support endpoint thinking caps"
@@ -405,7 +405,7 @@ def _endpoint_localpi_command(
         f"{node} {pi}",
         "--thinking",
         thinking,
-        "--thinking-budget",
+        "--thinking-phase-output-cap",
         str(thinking_budget),
         "--no-approval",
         "--stats",
