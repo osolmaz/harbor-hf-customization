@@ -5,7 +5,13 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from acp import RequestError
 from acp.interfaces import Client
-from acp.schema import TextContentBlock
+from acp.schema import (
+    HttpHeader,
+    HttpMcpServer,
+    McpServerStdio,
+    SseMcpServer,
+    TextContentBlock,
+)
 
 from harbor_openclaw_native import agent
 from harbor_openclaw_native.models import NIM_ENDPOINT, ROUTER
@@ -128,6 +134,51 @@ async def test_rejects_unsupported_session_options(
 ) -> None:
     with pytest.raises(RequestError):
         await harness.new_session("/app", additional_directories=["/tmp"])
+
+
+async def test_rejects_stdio_mcp_servers(harness: agent.OpenClawNativeAgent) -> None:
+    stdio = McpServerStdio(name="local", command="tool", args=[], env=[])
+    with pytest.raises(RequestError):
+        await harness.new_session("/app", mcp_servers=[stdio])
+
+
+def test_mcp_config_maps_remote_servers() -> None:
+    http = HttpMcpServer(
+        type="http",
+        name="computer",
+        url="http://computer-mcp:8000/mcp",
+        headers=[HttpHeader(name="X-Token", value="t")],
+    )
+    sse = SseMcpServer(
+        type="sse", name="events", url="http://events:9000/sse", headers=[]
+    )
+    assert agent.mcp_config([http, sse]) == {
+        "computer": {
+            "url": "http://computer-mcp:8000/mcp",
+            "transport": "streamable-http",
+            "headers": {"X-Token": "t"},
+        },
+        "events": {"url": "http://events:9000/sse", "transport": "sse"},
+    }
+    with pytest.raises(RequestError):
+        agent.mcp_config([http, http])
+
+
+async def test_session_passes_mcp_servers(
+    harness: agent.OpenClawNativeAgent, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write = Mock()
+    monkeypatch.setattr(agent, "write_config", write)
+    http = HttpMcpServer(
+        type="http", name="computer", url="http://computer-mcp:8000/mcp", headers=[]
+    )
+    await harness.new_session("/app", mcp_servers=[http])
+    assert write.call_args.kwargs["mcp_servers"] == {
+        "computer": {
+            "url": "http://computer-mcp:8000/mcp",
+            "transport": "streamable-http",
+        }
+    }
 
 
 @pytest.mark.parametrize(

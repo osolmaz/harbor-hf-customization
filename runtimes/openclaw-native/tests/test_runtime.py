@@ -71,6 +71,7 @@ def test_config_and_command(
     }
     assert value["tools"]["codeMode"] == {"enabled": enabled}
     assert value["models"]["providers"]["openai"]["api"] == "openai-completions"
+    assert "mcp" not in value
     args, env = runtime.command(
         entrypoint=tmp_path / "openclaw.mjs",
         config=config,
@@ -181,3 +182,21 @@ async def test_run_parses_envelope(tmp_path: Path) -> None:
         await runtime.run(
             process, args=["openclaw"], workspace="/app", env={}, logs=logs
         )
+
+
+def test_config_adds_mcp_servers(tmp_path: Path) -> None:
+    config = tmp_path / "openclaw.json"
+    servers: dict[str, dict[str, object]] = {
+        "computer": {
+            "url": "http://computer-mcp:8000/mcp",
+            "transport": "streamable-http",
+        }
+    }
+    runtime.write_config(
+        config,
+        requested_model=REQUESTED,
+        model=MODEL,
+        code_mode="direct",
+        mcp_servers=servers,
+    )
+    assert json.loads(config.read_text())["mcp"] == {"servers": servers}

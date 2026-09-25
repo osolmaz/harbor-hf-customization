@@ -54,6 +54,25 @@ PromptBlock = (
 CodeMode = Literal["direct", "code"]
 
 
+def mcp_config(
+    servers: list[HttpMcpServer | SseMcpServer | AcpMcpServer | McpServerStdio],
+) -> dict[str, dict[str, object]]:
+    """Map remote ACP MCP servers to OpenClaw's native mcp.servers config."""
+    config: dict[str, dict[str, object]] = {}
+    for server in servers:
+        if (
+            not isinstance(server, HttpMcpServer | SseMcpServer)
+            or server.name in config
+        ):
+            raise RequestError.invalid_params()
+        transport = "sse" if isinstance(server, SseMcpServer) else "streamable-http"
+        entry: dict[str, object] = {"url": server.url, "transport": transport}
+        if server.headers:
+            entry["headers"] = {header.name: header.value for header in server.headers}
+        config[server.name] = entry
+    return config
+
+
 class OpenClawNativeAgent(Agent):
     def __init__(self, code_mode: CodeMode, logs: Path | None = None) -> None:
         self.code_mode = code_mode
@@ -107,8 +126,9 @@ class OpenClawNativeAgent(Agent):
         | None = None,
         **kwargs: object,
     ) -> NewSessionResponse:
-        if self.session_id or mcp_servers or additional_directories:
+        if self.session_id or additional_directories:
             raise RequestError.invalid_params()
+        servers = mcp_config(mcp_servers or [])
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError("The inference credential is not configured")
         requested, model = await asyncio.to_thread(pinned_model, self.model_id)
@@ -122,6 +142,7 @@ class OpenClawNativeAgent(Agent):
             requested_model=requested,
             model=model,
             code_mode=self.code_mode,
+            mcp_servers=servers,
         )
         self.entrypoint = await install(root, self.logs)
         self.workspace = cwd

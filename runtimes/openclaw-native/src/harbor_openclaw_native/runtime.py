@@ -84,6 +84,7 @@ def write_config(
     requested_model: str,
     model: dict[str, object],
     code_mode: str,
+    mcp_servers: dict[str, dict[str, object]] | None = None,
 ) -> None:
     enabled = code_mode == "code"
     nim = endpoint_base_url() == NIM_ENDPOINT
@@ -123,6 +124,7 @@ def write_config(
             "exec": {"mode": "full"},
             "codeMode": {"enabled": enabled},
         },
+        **({"mcp": {"servers": mcp_servers}} if mcp_servers else {}),
     }
     path.write_text(json.dumps(config, sort_keys=True) + "\n")
 
