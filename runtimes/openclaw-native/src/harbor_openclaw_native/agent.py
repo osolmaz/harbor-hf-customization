@@ -39,7 +39,7 @@ from acp.schema import (
     UsageUpdate,
 )
 
-from harbor_openclaw_native.models import pinned_model
+from harbor_openclaw_native.models import NIM_ENDPOINT, endpoint_base_url, pinned_model
 from harbor_openclaw_native.process import OpenClawProcess
 from harbor_openclaw_native.runtime import command, install, run, write_config
 from harbor_openclaw_native.values import count, number, record
@@ -84,7 +84,7 @@ class OpenClawNativeAgent(Agent):
         return InitializeResponse(
             protocol_version=protocol_version,
             agent_capabilities=AgentCapabilities(),
-            agent_info=Implementation(name="openclaw-native", version="0.1.0rc3"),
+            agent_info=Implementation(name="openclaw-native", version="0.1.0rc4"),
         )
 
     def model_option(self) -> SessionConfigOptionSelect:
@@ -161,7 +161,13 @@ class OpenClawNativeAgent(Agent):
                 ),
             )
         )
-        cost = number(envelope.get("costUsd"))
+        # NVIDIA does not publish a rate for this private endpoint. OpenClaw's
+        # zero-priced metadata is not evidence of a zero-dollar vendor charge.
+        cost = (
+            None
+            if endpoint_base_url() == NIM_ENDPOINT
+            else number(envelope.get("costUsd"))
+        )
         context = count(self.model.get("contextWindow"))
         await self.conn.session_update(
             session_id=self.session_id,
@@ -169,7 +175,7 @@ class OpenClawNativeAgent(Agent):
                 session_update="usage_update",
                 used=min(context, input_tokens + cached_read + cached_write),
                 size=context,
-                cost=Cost(amount=cost, currency="USD"),
+                cost=Cost(amount=cost, currency="USD") if cost is not None else None,
             ),
         )
         return Usage(

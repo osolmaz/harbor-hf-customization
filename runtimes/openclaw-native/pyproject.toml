@@ -1,6 +1,6 @@
 [project]
 name = "harbor-openclaw-native-runtime"
-version = "0.1.0rc3"
+version = "0.1.0rc4"
 description = "Pinned OpenClaw native ACP runtime for Harbor"
 requires-python = ">=3.12"
 license = "MIT"

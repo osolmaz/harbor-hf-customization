@@ -8,6 +8,7 @@ from acp.interfaces import Client
 from acp.schema import TextContentBlock
 
 from harbor_openclaw_native import agent
+from harbor_openclaw_native.models import NIM_ENDPOINT, ROUTER
 
 REQUESTED = "openai/deepseek-ai/DeepSeek-V4-Flash-0731:baseten"
 MODEL: dict[str, object] = {
@@ -38,6 +39,7 @@ def harness(
 ) -> agent.OpenClawNativeAgent:
     monkeypatch.setenv("HARBOR_ACP_REQUESTED_MODEL", REQUESTED)
     monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    monkeypatch.setenv("OPENAI_BASE_URL", ROUTER)
     monkeypatch.setattr(agent, "pinned_model", lambda requested: (requested, MODEL))
     monkeypatch.setattr(agent, "write_config", Mock())
     monkeypatch.setattr(
@@ -55,7 +57,7 @@ async def test_session_and_prompt(
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "openclaw-native"
-    assert initialized.agent_info.version == "0.1.0rc3"
+    assert initialized.agent_info.version == "0.1.0rc4"
     session = await harness.new_session("/app")
     assert harness.settings is not None
     assert (Path(harness.settings.name) / "state").is_dir()
@@ -146,6 +148,21 @@ async def test_rejects_unsupported_model_selection(
     selected_session = session.session_id if session_id == "current" else session_id
     with pytest.raises(RequestError):
         await harness.set_config_option(config_id, selected_session, value)
+
+
+async def test_unpriced_endpoint_does_not_report_zero_dollar_cost(
+    harness: agent.OpenClawNativeAgent, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENAI_BASE_URL", NIM_ENDPOINT)
+    harness.model = {"contextWindow": 1000000}
+    harness.session_id = "session"
+    await harness.report_usage(ENVELOPE)
+    assert harness.conn is not None
+    update_mock = cast(AsyncMock, cast(object, harness.conn.session_update))
+    assert update_mock.await_args is not None
+    update = update_mock.await_args.kwargs["update"]
+    assert update.cost is None
+    assert update.size == 1000000
 
 
 async def test_error_envelope_keeps_usage(

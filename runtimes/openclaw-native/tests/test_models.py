@@ -5,6 +5,33 @@ import pytest
 from harbor_openclaw_native import models
 
 REQUESTED = "openai/deepseek-ai/DeepSeek-V4-Flash-0731:baseten"
+NIM_REQUESTED = "openai/private/vendor/reviewed-model"
+
+
+@pytest.fixture(autouse=True)
+def use_default_router(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+
+
+def test_reviewed_nim_route(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_BASE_URL", models.NIM_ENDPOINT)
+    requested, model = models.pinned_model(NIM_REQUESTED)
+    assert requested == NIM_REQUESTED
+    assert model == {
+        "id": "private/vendor/reviewed-model",
+        "name": "private/vendor/reviewed-model",
+        "reasoning": True,
+        "input": ["text"],
+        "contextWindow": 1000000,
+        "maxTokens": 65536,
+        "thinkingLevelMap": {"xhigh": "xhigh"},
+        "compat": {"supportsReasoningEffort": True},
+    }
+    with pytest.raises(ValueError, match="exact reviewed endpoint model"):
+        models.pinned_model(REQUESTED)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://other.example/v1")
+    with pytest.raises(ValueError, match="not supported"):
+        models.pinned_model(NIM_REQUESTED)
 
 
 def provider_data(**changes: object) -> dict[str, object]:

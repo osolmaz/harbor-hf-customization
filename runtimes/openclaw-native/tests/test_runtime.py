@@ -19,6 +19,7 @@ MODEL: dict[str, object] = {
 
 def make_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
     payload = tmp_path / "payload"
     for name in (
         "bin/node",
@@ -83,6 +84,45 @@ def test_config_and_command(
     assert args[-5:] == ["--thinking", "high", "--timeout", "0", "--json"]
     assert args[args.index("--code-mode") + 1] == mode
     assert env["OPENCLAW_TELEMETRY_DISABLED"] == "1"
+
+
+def test_nim_route_uses_xhigh_and_lean_tools(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make_payload(tmp_path, monkeypatch)
+    monkeypatch.setenv("OPENAI_BASE_URL", runtime.NIM_ENDPOINT)
+    requested = "openai/private/vendor/reviewed-model"
+    model: dict[str, object] = {
+        "id": "private/vendor/reviewed-model",
+        "reasoning": True,
+        "thinkingLevelMap": {"xhigh": "xhigh"},
+        "compat": {"supportsReasoningEffort": True},
+        "contextWindow": 1000000,
+        "maxTokens": 65536,
+    }
+    config = tmp_path / "openclaw.json"
+    runtime.write_config(
+        config, requested_model=requested, model=model, code_mode="direct"
+    )
+    value = json.loads(config.read_text())
+    assert value["models"]["providers"]["openai"]["baseUrl"] == runtime.NIM_ENDPOINT
+    assert value["models"]["providers"]["openai"]["models"] == [model]
+    assert value["agents"]["defaults"]["experimental"]["localModelLean"] is True
+    assert value["agents"]["defaults"]["models"][requested]["params"] == {
+        "extra_body": {"reasoning_budget": 16384}
+    }
+    args, _env = runtime.command(
+        entrypoint=tmp_path / "runtime/node_modules/openclaw/openclaw.mjs",
+        config=config,
+        state=tmp_path / "state",
+        workspace="/app",
+        instruction=tmp_path / "prompt",
+        requested_model=requested,
+        code_mode="direct",
+    )
+    assert args[args.index("--thinking") + 1] == "xhigh"
+    assert "--local-model-lean" in args
+    assert "--auth-env-only" in args
 
 
 async def test_install(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

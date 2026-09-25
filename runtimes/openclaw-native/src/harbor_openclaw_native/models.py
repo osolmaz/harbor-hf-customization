@@ -1,14 +1,24 @@
 """Resolve one exact OpenClaw model row from public route metadata."""
 
 import json
+import os
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from harbor_openclaw_native.values import count, number, record
 
 ROUTER = "https://router.huggingface.co/v1"
+NIM_ENDPOINT = "https://integrate.api.nvidia.com/v1"
 CATALOG = "https://pi.dev/api/models/providers/huggingface"
 _MAX_METADATA_BYTES = 8 * 1024 * 1024
+
+
+def endpoint_base_url() -> str:
+    """Accept only the built-in router or the reviewed NVIDIA NIM endpoint."""
+    url = os.environ.get("OPENAI_BASE_URL", "").rstrip("/") or ROUTER
+    if url not in (ROUTER, NIM_ENDPOINT):
+        raise ValueError("The configured inference endpoint is not supported")
+    return url
 
 
 def fetch_json(url: str) -> object:
@@ -61,6 +71,20 @@ def _provider_row(model_id: str, provider_id: str) -> dict[str, object]:
 
 
 def pinned_model(requested: str) -> tuple[str, dict[str, object]]:
+    if endpoint_base_url() == NIM_ENDPOINT:
+        route, slash, model_id = requested.partition("/")
+        if route != "openai" or not slash or "/" not in model_id or ":" in model_id:
+            raise ValueError("Use the exact reviewed endpoint model ID")
+        return requested, {
+            "id": model_id,
+            "name": model_id,
+            "reasoning": True,
+            "input": ["text"],
+            "contextWindow": 1000000,
+            "maxTokens": 65536,
+            "thinkingLevelMap": {"xhigh": "xhigh"},
+            "compat": {"supportsReasoningEffort": True},
+        }
     base_id, provider_id = _parse_request(requested)
     catalog = _catalog_row(base_id)
     provider = _provider_row(base_id, provider_id)

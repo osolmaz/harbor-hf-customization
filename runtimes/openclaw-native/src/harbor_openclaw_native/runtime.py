@@ -6,7 +6,7 @@ import os
 import shutil
 from pathlib import Path
 
-from harbor_openclaw_native.models import ROUTER
+from harbor_openclaw_native.models import NIM_ENDPOINT, endpoint_base_url
 from harbor_openclaw_native.process import OpenClawProcess
 from harbor_openclaw_native.values import record
 
@@ -86,13 +86,14 @@ def write_config(
     code_mode: str,
 ) -> None:
     enabled = code_mode == "code"
+    nim = endpoint_base_url() == NIM_ENDPOINT
     config = {
         "env": {"shellEnv": {"enabled": False}},
         "models": {
             "mode": "merge",
             "providers": {
                 "openai": {
-                    "baseUrl": ROUTER,
+                    "baseUrl": endpoint_base_url(),
                     "api": "openai-completions",
                     "models": [model],
                 }
@@ -105,9 +106,15 @@ def write_config(
                     requested_model: {
                         "agentRuntime": {"id": "openclaw"},
                         "codeMode": enabled,
+                        **(
+                            {"params": {"extra_body": {"reasoning_budget": 16384}}}
+                            if nim
+                            else {}
+                        ),
                     }
                 },
                 "sandbox": {"mode": "off"},
+                **({"experimental": {"localModelLean": True}} if nim else {}),
             }
         },
         "tools": {
@@ -131,6 +138,8 @@ def command(
     code_mode: str,
 ) -> tuple[list[str], dict[str, str]]:
     payload = payload_root()
+    nim = endpoint_base_url() == NIM_ENDPOINT
+    nim_flags: list[str] = ["--local-model-lean", "--auth-env-only"] if nim else []
     args = [
         str(payload / "bin/node"),
         str(entrypoint),
@@ -149,7 +158,8 @@ def command(
         "--code-mode",
         code_mode,
         "--thinking",
-        "high",
+        "xhigh" if nim else "high",
+        *nim_flags,
         "--timeout",
         "0",
         "--json",
