@@ -265,7 +265,7 @@ def test_endpoint_model_and_localpi_route(
         thinking_budget=8000,
     )
     assert args[args.index("--runtime") + 1] == "auto"
-    assert args[args.index("--thinking-budget") + 1] == "8000"
+    assert args[args.index("--thinking-phase-output-cap") + 1] == "8000"
     assert args[args.index("--provider") + 1] == engine
     assert "--base-url" not in args
     providers = json.loads((tmp_path / "settings/providers.json").read_text())
