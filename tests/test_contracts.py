@@ -181,12 +181,13 @@ LOCALPI_PAYLOAD = [
 
 
 def test_qwen_endpoint_canary_manifest_keeps_thinking_on() -> None:
-    manifest = json.loads(
-        (
-            Path(__file__).resolve().parents[1]
-            / "harnesses/localpi/harbor-agent-qwen-endpoint-cap-canary.json"
-        ).read_text()
+    manifest_path = "harnesses/localpi/harbor-agent-qwen-endpoint-cap-canary.json"
+    root = next(
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / manifest_path).is_file()
     )
+    manifest = json.loads((root / manifest_path).read_text())
     args = manifest["runtime"]["entrypoint"]
     options = dict(zip(args[1::2], args[2::2], strict=True))
     assert manifest["version"] == "0.1.0rc8"
