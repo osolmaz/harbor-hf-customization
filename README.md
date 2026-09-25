@@ -78,7 +78,7 @@ Do not treat an unverified build as a benchmark result.
 ## Pi through localpi
 
 The `--launcher localpi` option starts the same pinned Pi through the bundled
-[`localpi`](https://github.com/osolmaz/localpi) 0.6.3 instead of starting Pi
+[`localpi`](https://github.com/osolmaz/localpi) 0.7.0 instead of starting Pi
 directly. Everything else is unchanged: the same ACP adapter, the same pinned Pi
 and Code Mode extension, and the same HF router route. localpi owns Pi's
 configuration for this launcher, so the harness writes only a model profile.
@@ -111,8 +111,8 @@ configuration for this launcher, so the harness writes only a model profile.
   `retry.enabled: false`.
 
 Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
-direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin wheel
-`0.1.0rc7`, which bundles localpi 0.6.3 and carries the reply-limit and thinking
+direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin candidate wheel
+`0.1.0rc8`, which bundles localpi 0.7.0 and carries the reply-limit and thinking
 options.
 
 The directory also holds four manifests for reply-limit experiments:
@@ -123,13 +123,15 @@ guard. The pair isolates the guard, because every other setting is the same.
 the guarded run with provider thinking on and off, so the pair isolates the cost
 of thinking inside the same reply limit.
 
-### Reviewed endpoint thinking cap (not released)
+### Reviewed endpoint thinking cap (candidate only)
 
 The router manifests above still use the HF router. They do **not** run either
-endpoint or set a thinking cap. The endpoint path is opt-in and is not available
-in the currently pinned localpi 0.6.3 wheel. A new reviewed wheel must bundle
-a localpi release with endpoint-cap support before a hosted run. The harness
-checks that support and fails instead of silently running without a cap.
+endpoint or set a thinking cap. The opt-in endpoint path is in candidate wheel
+`0.1.0rc8`, which bundles localpi 0.7.0. The harness checks for cap support
+and fails instead of silently running without it. The wheel has passed a
+scripted local endpoint test, but not a live endpoint canary. Do not use it
+for a hosted endpoint run until that canary passes under a verified cumulative
+host spending limit.
 
 For an endpoint run, select the ACP source agent through a reviewed Harbor-HF
 endpoint connection. The connection supplies `OPENAI_BASE_URL` and
