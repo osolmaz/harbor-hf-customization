@@ -122,7 +122,7 @@ def test_nim_route_uses_xhigh_and_lean_tools(
     )
     assert args[args.index("--thinking") + 1] == "xhigh"
     assert "--local-model-lean" in args
-    assert "--auth-env-only" in args
+    assert "--auth-env-only" not in args
 
 
 async def test_install(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

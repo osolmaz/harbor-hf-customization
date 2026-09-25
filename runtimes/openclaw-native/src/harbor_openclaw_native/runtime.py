@@ -139,7 +139,7 @@ def command(
 ) -> tuple[list[str], dict[str, str]]:
     payload = payload_root()
     nim = endpoint_base_url() == NIM_ENDPOINT
-    nim_flags: list[str] = ["--local-model-lean", "--auth-env-only"] if nim else []
+    nim_flags: list[str] = ["--local-model-lean"] if nim else []
     args = [
         str(payload / "bin/node"),
         str(entrypoint),
