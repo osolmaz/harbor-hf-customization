@@ -205,6 +205,31 @@ def test_qwen_endpoint_canary_manifest_keeps_thinking_on() -> None:
     )
 
 
+def test_llama_cpp_endpoint_canary_manifest_keeps_thinking_on() -> None:
+    manifest_path = "harnesses/localpi/harbor-agent-llama-cpp-endpoint-cap-canary.json"
+    root = next(
+        parent
+        for parent in Path(__file__).resolve().parents
+        if (parent / manifest_path).is_file()
+    )
+    manifest = json.loads((root / manifest_path).read_text())
+    args = manifest["runtime"]["entrypoint"]
+    options = dict(zip(args[1::2], args[2::2], strict=True))
+    assert manifest["version"] == "0.1.0rc8"
+    assert options["--launcher"] == "localpi"
+    assert options["--endpoint-engine"] == "llama-cpp"
+    assert options["--endpoint-context-window"] == "32768"
+    assert options["--thinking"] == "high"
+    assert options["--thinking-format"] == "none"
+    assert options["--max-output-tokens"] == "16384"
+    assert options["--thinking-phase-output-cap"] == "8000"
+    assert (
+        0
+        < int(options["--thinking-phase-output-cap"])
+        < int(options["--max-output-tokens"])
+    )
+
+
 def test_localpi_launcher_contract(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
