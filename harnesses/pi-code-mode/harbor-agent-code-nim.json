@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "id": "pi-direct-canary",
+  "id": "pi-code-mode-nim",
   "version": "0.1.0rc11",
   "protocol": "acp",
   "runtime": {
@@ -11,9 +11,13 @@
     "entrypoint": [
       "harbor-pi-code-mode",
       "--code-mode",
-      "direct",
-      "--max-provider-requests",
-      "4"
+      "code",
+      "--thinking",
+      "xhigh",
+      "--max-output-tokens",
+      "16384",
+      "--nim-context-window",
+      "1000000"
     ]
   }
 }
