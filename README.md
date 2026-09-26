@@ -112,7 +112,7 @@ configuration for this launcher, so the harness writes only a model profile.
 
 Select the `harnesses/localpi` directory with `harbor-agent-localpi.json` for
 direct Pi or `harbor-agent-localpi-code.json` for Code Mode. Both pin candidate wheel
-`0.1.0rc9`, which bundles localpi 0.8.1 and carries the reply-limit and thinking
+`0.1.0rc10`, which bundles localpi 0.8.1 and carries the reply-limit and thinking
 options.
 
 The directory also holds four manifests for reply-limit experiments:
@@ -127,7 +127,7 @@ of thinking inside the same reply limit.
 
 The router manifests above still use the HF router. They do **not** run either
 endpoint or set a thinking cap. The opt-in endpoint path is in candidate wheel
-`0.1.0rc9`, which bundles localpi 0.8.1. The harness checks for cap support
+`0.1.0rc10`, which bundles localpi 0.8.1. The harness checks for cap support
 and fails instead of silently running without it. The wheel must pass a
 scripted local endpoint test and a live endpoint canary before wider use. Do not use it
 for a full hosted endpoint run until an approved live canary passes. A host

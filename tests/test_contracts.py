@@ -190,7 +190,7 @@ def test_qwen_endpoint_canary_manifest_keeps_thinking_on() -> None:
     manifest = json.loads((root / manifest_path).read_text())
     args = manifest["runtime"]["entrypoint"]
     options = dict(zip(args[1::2], args[2::2], strict=True))
-    assert manifest["version"] == "0.1.0rc9"
+    assert manifest["version"] == "0.1.0rc10"
     assert options["--launcher"] == "localpi"
     assert options["--endpoint-engine"] == "vllm"
     assert options["--endpoint-context-window"] == "131072"
@@ -215,7 +215,7 @@ def test_llama_cpp_endpoint_canary_manifest_keeps_thinking_on() -> None:
     manifest = json.loads((root / manifest_path).read_text())
     args = manifest["runtime"]["entrypoint"]
     options = dict(zip(args[1::2], args[2::2], strict=True))
-    assert manifest["version"] == "0.1.0rc9"
+    assert manifest["version"] == "0.1.0rc10"
     assert options["--launcher"] == "localpi"
     assert options["--endpoint-engine"] == "llama-cpp"
     assert options["--endpoint-context-window"] == "65536"
