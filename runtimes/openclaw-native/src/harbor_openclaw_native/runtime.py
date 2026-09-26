@@ -170,6 +170,10 @@ def command(
         **os.environ,
         "PATH": f"{payload / 'bin'}:{os.environ.get('PATH', '')}",
         "OPENCLAW_TELEMETRY_DISABLED": "1",
+        # Long tool-heavy runs register many resources; the default 10s cleanup
+        # budget expires before settlement and OpenClaw then discards a completed
+        # successful envelope as an error. Give cleanup room to settle.
+        "OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS": "120000",
     }
     return args, env
 

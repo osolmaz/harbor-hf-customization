@@ -85,6 +85,7 @@ def test_config_and_command(
     assert args[-5:] == ["--thinking", "high", "--timeout", "0", "--json"]
     assert args[args.index("--code-mode") + 1] == mode
     assert env["OPENCLAW_TELEMETRY_DISABLED"] == "1"
+    assert env["OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS"] == "120000"
 
 
 def test_nim_route_uses_high_and_lean_tools(
