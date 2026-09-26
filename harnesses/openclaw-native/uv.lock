@@ -37,7 +37,7 @@ dependencies = [
     { name = "agent-client-protocol" },
 ]
 wheels = [
-    { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc8/harbor_openclaw_native_runtime-0.1.0rc8-py3-none-linux_x86_64.whl", hash = "sha256:bce28955d2802e2eec9a9ea07b5ea6b2ac6def31b329defb676d79c3ebaa4f7a" },
+    { url = "https://github.com/osolmaz/harbor-hf-customization/releases/download/openclaw-native-0.1.0rc8/harbor_openclaw_native_runtime-0.1.0rc8-py3-none-linux_x86_64.whl", hash = "sha256:7b510d249e97b79d9d7d4e193cc450f3dc4a282bb48552a06891e4e0d0ee8d06" },
 ]
 
 [package.metadata]
