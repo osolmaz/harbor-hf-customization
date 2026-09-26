@@ -519,3 +519,34 @@ def test_nim_base_url_reaches_pi_models(
         runtime.command(
             {"id": "x"}, settings, logs, "code", base_url="https://other.example/v1"
         )
+
+
+def test_unknown_thinking_level_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    with pytest.raises(
+        ValueError, match="^Thinking must be off, low, medium, high or xhigh$"
+    ):
+        runtime.command(
+            {"id": "x"},
+            tmp_path / "s",
+            tmp_path / "l",
+            "code",
+            thinking=cast(runtime.ThinkingLevel, cast(object, "max")),
+        )
+
+
+def test_router_is_the_default_pi_base_url(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    settings = tmp_path / "settings"
+    runtime.command({"id": "x"}, settings, tmp_path / "logs", "code")
+    provider = json.loads((settings / "models.json").read_text())["providers"][
+        "hf-pinned"
+    ]
+    assert provider["baseUrl"] == "https://router.huggingface.co/v1"

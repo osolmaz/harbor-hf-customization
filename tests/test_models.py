@@ -485,3 +485,22 @@ def test_nim_model_row() -> None:
         models.nim_model("private/vendor/model", 1000000, 16384)
     with pytest.raises(ValueError, match="NIM limits"):
         models.nim_model("openai/private/vendor/model", 100, 16384)
+
+
+def test_nim_model_exact_row_and_limits() -> None:
+    assert models.nim_model("openai/private/vendor/model", 1000, 1000) == {
+        "id": "private/vendor/model",
+        "api": "openai-completions",
+        "reasoning": True,
+        "input": ["text"],
+        "contextWindow": 1000,
+        "maxTokens": 1000,
+        "compat": {"supportsReasoningEffort": True},
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    }
+    for requested in ("openai/", "private/openai/"):
+        with pytest.raises(ValueError, match="explicit openai"):
+            models.nim_model(requested, 1000, 100)
+    for window, tokens in ((True, 100), (0, 1), (1000, False), (1000, 0), (10, 11)):
+        with pytest.raises(ValueError, match="NIM limits"):
+            models.nim_model("openai/private/vendor/model", window, tokens)

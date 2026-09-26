@@ -32,7 +32,7 @@ def command(
     endpoint_engine: EndpointEngine | None = None,
     endpoint_base_url: str | None = None,
     thinking_budget: int | None = None,
-    base_url: str = ROUTER,
+    base_url: str | None = None,
 ) -> tuple[list[str], dict[str, str]]:
     _validate(
         code_mode,
@@ -231,8 +231,9 @@ def _pi_command(
     thinking: str,
     thinking_format: str,
     env: dict[str, str],
-    base_url: str = ROUTER,
+    base_url: str | None = None,
 ) -> tuple[list[str], dict[str, str]]:
+    base_url = base_url or ROUTER
     if base_url not in (ROUTER, NIM_ENDPOINT):
         raise ValueError("The Pi launcher supports only the HF router or NVIDIA NIM")
     env["PI_CODING_AGENT_DIR"] = str(settings)

@@ -693,3 +693,128 @@ def test_cli_nim_options(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(SystemExit) as error:
         agent.main()
     assert error.value.code == 2
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [
+        (["--max-provider-requests", "0"], "--max-provider-requests must be positive"),
+        (
+            ["--continue-on-truncation", "-1"],
+            "--continue-on-truncation cannot be negative",
+        ),
+        (["--max-output-tokens", "0"], "--max-output-tokens must be positive"),
+        (
+            ["--endpoint-engine", "vllm", "--endpoint-context-window", "0"],
+            "--endpoint-context-window must be positive",
+        ),
+        (
+            ["--endpoint-context-window", "10"],
+            "endpoint context and thinking cap require --endpoint-engine",
+        ),
+        (
+            ["--thinking-phase-output-cap", "10"],
+            "endpoint context and thinking cap require --endpoint-engine",
+        ),
+        (
+            ["--nim-context-window", "0", "--max-output-tokens", "10"],
+            "--nim-context-window needs the pi launcher, --max-output-tokens "
+            "and no --endpoint-engine",
+        ),
+        (
+            ["--nim-context-window", "100"],
+            "--nim-context-window needs the pi launcher, --max-output-tokens "
+            "and no --endpoint-engine",
+        ),
+        (
+            [
+                "--nim-context-window",
+                "100",
+                "--max-output-tokens",
+                "10",
+                "--launcher",
+                "localpi",
+            ],
+            "--nim-context-window needs the pi launcher, --max-output-tokens "
+            "and no --endpoint-engine",
+        ),
+        (
+            [
+                "--nim-context-window",
+                "100",
+                "--max-output-tokens",
+                "10",
+                "--endpoint-engine",
+                "vllm",
+            ],
+            "--nim-context-window needs the pi launcher, --max-output-tokens "
+            "and no --endpoint-engine",
+        ),
+    ],
+)
+def test_cli_argument_errors(
+    monkeypatch: pytest.MonkeyPatch, argv: list[str], message: str
+) -> None:
+    import sys
+
+    monkeypatch.setattr(
+        sys, "argv", ["harbor-pi-code-mode", "--code-mode", "code", *argv]
+    )
+    error = Mock(side_effect=SystemExit(2))
+    monkeypatch.setattr(agent.argparse.ArgumentParser, "error", error)
+    with pytest.raises(SystemExit):
+        agent.main()
+    error.assert_called_once_with(message)
+
+
+@pytest.mark.parametrize(
+    ("base_url", "launcher", "limit"),
+    [
+        (None, "pi", 16384),
+        ("https://other.example/v1", "pi", 16384),
+        ("https://integrate.api.nvidia.com/v1", "localpi", 16384),
+        ("https://integrate.api.nvidia.com/v1", "pi", None),
+    ],
+)
+async def test_nim_guard_rejects_each_missing_condition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    base_url: str | None,
+    launcher: str,
+    limit: int | None,
+) -> None:
+    monkeypatch.setenv("HARBOR_ACP_REQUESTED_MODEL", "openai/private/vendor/model")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    if base_url is None:
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    else:
+        monkeypatch.setenv("OPENAI_BASE_URL", base_url)
+    instance = agent.PiCodeModeAgent(
+        "code",
+        tmp_path,
+        launcher=cast(agent.Launcher, launcher),
+        max_output_tokens=limit,
+        nim_context_window=1000000,
+    )
+    with pytest.raises(
+        RuntimeError,
+        match="^NIM needs the reviewed NVIDIA URL, the pi launcher and a reply limit$",
+    ):
+        await instance.new_session("/app")
+
+
+async def test_nim_accepts_a_trailing_slash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HARBOR_ACP_REQUESTED_MODEL", "openai/private/vendor/model")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1/")
+    monkeypatch.setattr(agent, "command", lambda *args, **kwargs: (["fake"], {}))
+    instance = agent.PiCodeModeAgent(
+        "code", tmp_path, max_output_tokens=16384, nim_context_window=1000000
+    )
+    instance.rpc = FakePi()
+    instance.rpc.selected = {"id": "private/vendor/model", "provider": "hf-pinned"}
+    instance.on_connect(cast(Client, AsyncMock(spec=Client)))
+    await instance.new_session("/app")
+    await instance.close()
