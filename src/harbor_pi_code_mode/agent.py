@@ -98,6 +98,7 @@ class PiCodeModeAgent(Agent):
         self.active = False
         self.cancelled = asyncio.Event()
         self.failed = False
+        self.reported_cost = 0.0
 
     @override
     def on_connect(self, conn: Client) -> None:
@@ -116,7 +117,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc9",
+                version="0.1.0rc10",
             ),
         )
 
@@ -233,24 +234,35 @@ class PiCodeModeAgent(Agent):
         stats = await self.rpc.request("get_session_stats")
         tokens = record(stats.get("tokens"))
         context = record(stats.get("contextUsage"))
-        await self.conn.session_update(
-            session_id=self.session_id,
-            update=UsageUpdate(
-                session_update="usage_update",
-                used=count(context.get("tokens")),
-                size=count(context.get("contextWindow")),
-                cost=Cost(amount=number(stats.get("cost")), currency="USD"),
-            ),
-        )
+        cost = number(stats.get("cost"))
+        size = count(context["contextWindow"])
         cached_read = count(tokens.get("cacheRead"))
         cached_write = count(tokens.get("cacheWrite"))
-        return Usage(
+        usage = Usage(
             total_tokens=count(tokens.get("total")),
             input_tokens=count(tokens.get("input")) + cached_read + cached_write,
             output_tokens=count(tokens.get("output")),
             cached_read_tokens=cached_read,
             cached_write_tokens=cached_write,
         )
+        context_tokens = context["tokens"]
+        if context_tokens is None:
+            # Pi cannot estimate current context immediately after compaction.
+            # ACP requires an integer used value, so do not invent one.
+            if cost > self.reported_cost:
+                raise RuntimeError("Pi reported new cost without known context usage")
+        else:
+            await self.conn.session_update(
+                session_id=self.session_id,
+                update=UsageUpdate(
+                    session_update="usage_update",
+                    used=count(context_tokens),
+                    size=size,
+                    cost=Cost(amount=cost, currency="USD"),
+                ),
+            )
+            self.reported_cost = cost
+        return usage
 
     async def message(self, event: dict[str, object]) -> None:
         assert self.conn is not None and self.session_id is not None

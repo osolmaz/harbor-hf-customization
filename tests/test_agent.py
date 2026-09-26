@@ -28,6 +28,7 @@ class FakePi(PiRpc):
         super().__init__()
         self.closed = False
         self.calls: list[str] = []
+        self.stats: dict[str, object] = STATS
         self.selected = {"id": "example/model:provider", "provider": "hf-pinned"}
 
     @override
@@ -42,7 +43,7 @@ class FakePi(PiRpc):
         if command == "get_state":
             return {"model": self.selected}
         if command == "get_session_stats":
-            return STATS
+            return self.stats
         return {}
 
     @override
@@ -118,7 +119,7 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "pi-code-mode"
-    assert initialized.agent_info.version == "0.1.0rc9"
+    assert initialized.agent_info.version == "0.1.0rc10"
     assert initialized.protocol_version == 1
     assert initialized.agent_capabilities is not None
     response = await harness.new_session("/app")
@@ -236,6 +237,68 @@ async def test_forwards_tools_and_authoritative_usage(
         elif update.session_update == "tool_call_update":
             assert update.tool_call_id == "one" and update.status == "completed"
             assert update.raw_output == {"content": []}
+    await harness.close()
+
+
+async def test_compaction_unknown_context_keeps_authoritative_token_usage(
+    harness: agent.PiCodeModeAgent,
+) -> None:
+    response = await harness.new_session("/app")
+    await harness.message({"message": {"role": "assistant", "content": []}})
+    rpc = cast(FakePi, harness.rpc)
+    rpc.stats = {
+        **STATS,
+        "tokens": {
+            **cast(dict[str, object], STATS["tokens"]),
+            "output": 20,
+            "total": 125,
+        },
+        "contextUsage": {"tokens": None, "contextWindow": 2000, "percent": None},
+    }
+    await harness.event({"type": "compaction_end", "aborted": False})
+    rpc.events.put_nowait({"type": "agent_settled"})
+    result = await harness.prompt(response.session_id, [])
+    assert result.usage is not None
+    assert result.usage.total_tokens == 125
+    assert result.usage.input_tokens == 105
+    assert result.usage.output_tokens == 20
+    updates = [
+        call.kwargs["update"]
+        for call in cast(AsyncMock, harness.conn).session_update.call_args_list
+    ]
+    assert len(updates) == 1
+    assert updates[0].used == 100 and updates[0].size == 2000
+    assert updates[0].cost.amount == 0.01
+    await harness.close()
+
+
+async def test_compaction_with_new_unreportable_cost_fails_closed(
+    harness: agent.PiCodeModeAgent,
+) -> None:
+    await harness.new_session("/app")
+    await harness.message({"message": {"role": "assistant", "content": []}})
+    cast(FakePi, harness.rpc).stats = {
+        **STATS,
+        "cost": 0.02,
+        "contextUsage": {"tokens": None, "contextWindow": 2000},
+    }
+    with pytest.raises(RuntimeError, match="new cost without known context usage"):
+        await harness.report_usage()
+    assert cast(AsyncMock, harness.conn).session_update.call_count == 1
+    await harness.close()
+
+
+async def test_negative_context_usage_is_not_treated_as_unknown(
+    harness: agent.PiCodeModeAgent,
+) -> None:
+    await harness.new_session("/app")
+    cast(FakePi, harness.rpc).stats = {
+        **STATS,
+        "contextUsage": {"tokens": -1, "contextWindow": 2000},
+    }
+    with pytest.raises(ValueError, match="Expected a nonnegative finite number"):
+        await harness.report_usage()
+    cast(AsyncMock, harness.conn).session_update.assert_not_called()
     await harness.close()
 
 

@@ -59,9 +59,13 @@ the credential value. No Pi schema or internal API is changed.
 Only one ACP session and one active prompt are accepted by a process. Model
 selection is advertised through ACP's native model configuration option and
 must match the model supplied by Harbor. Provider failures and missing usage
-fail closed. The adapter reports actual Pi statistics rather than inventing
-zero-cost success. Cost is Pi's estimate from HF's quoted rates, with cached
-input charged at the full input rate when no cache price is published.
+fail closed. The adapter reports Pi's actual statistics rather than inventing
+zero-cost success. Pi reports an unknown context token count just after
+compaction. The adapter skips that context-only update and still returns the
+cumulative token counts. If cost rises while context usage is unknown, the
+adapter fails rather than hide the extra cost. Cost is Pi's estimate from HF's
+quoted rates, with cached input charged at the full input rate when no cache
+price is published.
 
 For a bounded probe, a native manifest can add `--max-provider-requests 4` to
 its entrypoint. This uses Pi's public `before_provider_request` hook and
