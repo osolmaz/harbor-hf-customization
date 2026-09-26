@@ -10,6 +10,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 from harbor_pi_code_mode.values import count, number, record
 
 ROUTER = "https://router.huggingface.co/v1"
+NIM_ENDPOINT = "https://integrate.api.nvidia.com/v1"
 CATALOG = "https://pi.dev/api/models/providers/huggingface"
 BUNDLED_MODELS = record(
     json.loads(Path(__file__).with_name("model-catalog.json").read_text())
@@ -97,6 +98,36 @@ def endpoint_model(
         "maxTokens": max_tokens,
         # Endpoint hosts are billed by elapsed time, not by token. This value is
         # not the host bill; a separate cumulative host limit is required.
+        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    }
+
+
+def nim_model(
+    requested: str, context_window: int, max_tokens: int
+) -> dict[str, object]:
+    """Describe a reviewed NVIDIA NIM model for Pi's native provider.
+
+    NVIDIA does not always list private models in its /models route, so the row is
+    built from the reviewed request. NVIDIA publishes no per-token price here.
+    """
+    if not requested.startswith("openai/") or not requested.removeprefix("openai/"):
+        raise ValueError("A NIM model requires an explicit openai/<model-id>")
+    if (
+        isinstance(context_window, bool)
+        or context_window <= 0
+        or isinstance(max_tokens, bool)
+        or max_tokens <= 0
+        or max_tokens > context_window
+    ):
+        raise ValueError("Set positive NIM limits, with output within context")
+    return {
+        "id": requested.removeprefix("openai/"),
+        "api": "openai-completions",
+        "reasoning": True,
+        "input": ["text"],
+        "contextWindow": context_window,
+        "maxTokens": max_tokens,
+        "compat": {"supportsReasoningEffort": True},
         "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
     }
 

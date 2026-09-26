@@ -474,3 +474,14 @@ def test_missing_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
     with pytest.raises(RuntimeError, match="payload"):
         runtime.command({}, tmp_path / "settings", tmp_path, "code")
+
+
+def test_nim_model_row() -> None:
+    row = models.nim_model("openai/private/vendor/model", 1000000, 16384)
+    assert row["id"] == "private/vendor/model"
+    assert row["reasoning"] is True
+    assert row["compat"] == {"supportsReasoningEffort": True}
+    with pytest.raises(ValueError, match="explicit openai"):
+        models.nim_model("private/vendor/model", 1000000, 16384)
+    with pytest.raises(ValueError, match="NIM limits"):
+        models.nim_model("openai/private/vendor/model", 100, 16384)

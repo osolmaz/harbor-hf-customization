@@ -119,7 +119,7 @@ async def test_native_acp_session(harness: agent.PiCodeModeAgent) -> None:
     initialized = await harness.initialize(1)
     assert initialized.agent_info is not None
     assert initialized.agent_info.name == "pi-code-mode"
-    assert initialized.agent_info.version == "0.1.0rc10"
+    assert initialized.agent_info.version == "0.1.0rc11"
     assert initialized.protocol_version == 1
     assert initialized.agent_capabilities is not None
     response = await harness.new_session("/app")
@@ -447,6 +447,7 @@ async def test_serve_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
         endpoint_engine=None,
         endpoint_context_window=None,
         thinking_budget=None,
+        nim_context_window=None,
     )
     runner.assert_awaited_once_with(harness)
     harness.close.assert_awaited_once_with()
@@ -620,6 +621,75 @@ def test_cli_rejects_invalid_bound(monkeypatch: pytest.MonkeyPatch, limit: str) 
             limit,
         ],
     )
+    with pytest.raises(SystemExit) as error:
+        agent.main()
+    assert error.value.code == 2
+
+
+async def test_nim_uses_the_reviewed_nvidia_route(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HARBOR_ACP_REQUESTED_MODEL", "openai/private/vendor/model")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    calls: list[dict[str, object]] = []
+
+    def fake_command(
+        *args: object, **kwargs: object
+    ) -> tuple[list[str], dict[str, str]]:
+        calls.append({"model": args[0], **kwargs})
+        return ["fake"], {}
+
+    monkeypatch.setattr(agent, "command", fake_command)
+    instance = agent.PiCodeModeAgent(
+        "code",
+        tmp_path,
+        max_output_tokens=16384,
+        thinking="xhigh",
+        nim_context_window=1000000,
+    )
+    instance.rpc = FakePi()
+    instance.rpc.selected = {"id": "private/vendor/model", "provider": "hf-pinned"}
+    instance.on_connect(cast(Client, AsyncMock(spec=Client)))
+    await instance.new_session("/app")
+    assert calls[0]["base_url"] == "https://integrate.api.nvidia.com/v1"
+    model = cast(dict[str, object], calls[0]["model"])
+    assert model["id"] == "private/vendor/model"
+    assert model["compat"] == {"supportsReasoningEffort": True}
+    assert (model["contextWindow"], model["maxTokens"]) == (1000000, 16384)
+    await instance.close()
+
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://other.example/v1")
+    wrong = agent.PiCodeModeAgent(
+        "code", tmp_path, max_output_tokens=16384, nim_context_window=1000000
+    )
+    with pytest.raises(RuntimeError, match="reviewed NVIDIA URL"):
+        await wrong.new_session("/app")
+
+
+def test_cli_nim_options(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    argv = [
+        "harbor-pi-code-mode",
+        "--code-mode",
+        "code",
+        "--thinking",
+        "xhigh",
+        "--max-output-tokens",
+        "16384",
+        "--nim-context-window",
+        "1000000",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    serve = Mock(return_value="awaitable")
+    monkeypatch.setattr(agent, "serve", serve)
+    monkeypatch.setattr(agent.asyncio, "run", Mock())
+    agent.main()
+    serve.assert_called_once_with(
+        "code", None, "pi", 0, 16384, "xhigh", "none", nim_context_window=1000000
+    )
+    monkeypatch.setattr(sys, "argv", argv[:5] + argv[7:])
     with pytest.raises(SystemExit) as error:
         agent.main()
     assert error.value.code == 2

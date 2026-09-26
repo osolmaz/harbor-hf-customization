@@ -42,7 +42,12 @@ from acp.schema import (
     UsageUpdate,
 )
 
-from harbor_pi_code_mode.models import endpoint_model, pinned_model
+from harbor_pi_code_mode.models import (
+    NIM_ENDPOINT,
+    endpoint_model,
+    nim_model,
+    pinned_model,
+)
 from harbor_pi_code_mode.rpc import PiRpc
 from harbor_pi_code_mode.runtime import (
     CodeMode,
@@ -77,8 +82,10 @@ class PiCodeModeAgent(Agent):
         endpoint_engine: EndpointEngine | None = None,
         endpoint_context_window: int | None = None,
         thinking_budget: int | None = None,
+        nim_context_window: int | None = None,
     ) -> None:
         self.code_mode = code_mode
+        self.nim_context_window = nim_context_window
         self.max_provider_requests = max_provider_requests
         self.launcher = launcher
         self.continuation_limit = continuation_limit
@@ -117,7 +124,7 @@ class PiCodeModeAgent(Agent):
             agent_capabilities=AgentCapabilities(),
             agent_info=Implementation(
                 name="pi-code-mode" if self.code_mode == "code" else "pi-direct",
-                version="0.1.0rc10",
+                version="0.1.0rc11",
             ),
         )
 
@@ -135,20 +142,18 @@ class PiCodeModeAgent(Agent):
             )
         ]
 
-    @override
-    async def new_session(
-        self,
-        cwd: str,
-        additional_directories: list[str] | None = None,
-        mcp_servers: list[HttpMcpServer | SseMcpServer | AcpMcpServer | McpServerStdio]
-        | None = None,
-        **kwargs: object,
-    ) -> NewSessionResponse:
-        if self.session_id or mcp_servers or additional_directories:
-            raise RequestError.invalid_params()
-        if not os.environ.get("OPENAI_API_KEY"):
-            raise RuntimeError("The inference credential is not configured")
-        base_url = os.environ.get("OPENAI_BASE_URL") if self.endpoint_engine else None
+    def _nim_model(self, context_window: int) -> dict[str, object]:
+        if (
+            os.environ.get("OPENAI_BASE_URL", "").rstrip("/") != NIM_ENDPOINT
+            or self.launcher != "pi"
+            or self.max_output_tokens is None
+        ):
+            raise RuntimeError(
+                "NIM needs the reviewed NVIDIA URL, the pi launcher and a reply limit"
+            )
+        return nim_model(self.model_id, context_window, self.max_output_tokens)
+
+    async def _session_model(self, base_url: str | None) -> dict[str, object]:
         if self.endpoint_engine is not None and (
             self.launcher != "localpi"
             or self.thinking == "off"
@@ -169,7 +174,7 @@ class PiCodeModeAgent(Agent):
                 raise RuntimeError(
                     "A reviewed endpoint URL and explicit limits are required"
                 )
-            model = await asyncio.to_thread(
+            return await asyncio.to_thread(
                 endpoint_model,
                 self.model_id,
                 base_url,
@@ -177,8 +182,25 @@ class PiCodeModeAgent(Agent):
                 self.endpoint_context_window,
                 self.max_output_tokens,
             )
-        else:
-            model = await asyncio.to_thread(pinned_model, self.model_id)
+        if self.nim_context_window is not None:
+            return self._nim_model(self.nim_context_window)
+        return await asyncio.to_thread(pinned_model, self.model_id)
+
+    @override
+    async def new_session(
+        self,
+        cwd: str,
+        additional_directories: list[str] | None = None,
+        mcp_servers: list[HttpMcpServer | SseMcpServer | AcpMcpServer | McpServerStdio]
+        | None = None,
+        **kwargs: object,
+    ) -> NewSessionResponse:
+        if self.session_id or mcp_servers or additional_directories:
+            raise RequestError.invalid_params()
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError("The inference credential is not configured")
+        base_url = os.environ.get("OPENAI_BASE_URL") if self.endpoint_engine else None
+        model = await self._session_model(base_url)
         self.settings = tempfile.TemporaryDirectory(prefix=f"pi-{self.code_mode}-")
         self.logs.mkdir(parents=True, exist_ok=True)
         launch_args = (
@@ -193,7 +215,9 @@ class PiCodeModeAgent(Agent):
             self.thinking,
             self.thinking_format,
         )
-        if self.endpoint_engine is None:
+        if self.nim_context_window is not None:
+            args, env = command(*launch_args, base_url=NIM_ENDPOINT)
+        elif self.endpoint_engine is None:
             args, env = command(*launch_args)
         else:
             args, env = command(
@@ -391,6 +415,7 @@ async def serve(
     endpoint_engine: EndpointEngine | None = None,
     endpoint_context_window: int | None = None,
     thinking_budget: int | None = None,
+    nim_context_window: int | None = None,
 ) -> None:
     agent = PiCodeModeAgent(
         code_mode=code_mode,
@@ -403,11 +428,38 @@ async def serve(
         endpoint_engine=endpoint_engine,
         endpoint_context_window=endpoint_context_window,
         thinking_budget=thinking_budget,
+        nim_context_window=nim_context_window,
     )
     try:
         await run_agent(agent)
     finally:
         await agent.close()
+
+
+def _argument_error(args: argparse.Namespace) -> str | None:
+    if args.max_provider_requests is not None and args.max_provider_requests < 1:
+        return "--max-provider-requests must be positive"
+    if args.continue_on_truncation < 0:
+        return "--continue-on-truncation cannot be negative"
+    if args.max_output_tokens is not None and args.max_output_tokens < 1:
+        return "--max-output-tokens must be positive"
+    if args.endpoint_context_window is not None and args.endpoint_context_window < 1:
+        return "--endpoint-context-window must be positive"
+    if args.endpoint_engine is None and (
+        args.endpoint_context_window is not None or args.thinking_budget is not None
+    ):
+        return "endpoint context and thinking cap require --endpoint-engine"
+    if args.nim_context_window is not None and (
+        args.nim_context_window < 1
+        or args.endpoint_engine is not None
+        or args.launcher != "pi"
+        or args.max_output_tokens is None
+    ):
+        return (
+            "--nim-context-window needs the pi launcher, --max-output-tokens "
+            "and no --endpoint-engine"
+        )
+    return None
 
 
 def main() -> None:
@@ -420,8 +472,9 @@ def main() -> None:
     parser.add_argument("--endpoint-engine", choices=("vllm", "llama-cpp"))
     parser.add_argument("--endpoint-context-window", type=int)
     parser.add_argument("--thinking-phase-output-cap", dest="thinking_budget", type=int)
+    parser.add_argument("--nim-context-window", type=int)
     parser.add_argument(
-        "--thinking", choices=("off", "low", "medium", "high"), default="high"
+        "--thinking", choices=("off", "low", "medium", "high", "xhigh"), default="high"
     )
     parser.add_argument(
         "--thinking-format",
@@ -429,18 +482,9 @@ def main() -> None:
         default="none",
     )
     args = parser.parse_args()
-    if args.max_provider_requests is not None and args.max_provider_requests < 1:
-        parser.error("--max-provider-requests must be positive")
-    if args.continue_on_truncation < 0:
-        parser.error("--continue-on-truncation cannot be negative")
-    if args.max_output_tokens is not None and args.max_output_tokens < 1:
-        parser.error("--max-output-tokens must be positive")
-    if args.endpoint_context_window is not None and args.endpoint_context_window < 1:
-        parser.error("--endpoint-context-window must be positive")
-    if args.endpoint_engine is None and (
-        args.endpoint_context_window is not None or args.thinking_budget is not None
-    ):
-        parser.error("endpoint context and thinking cap require --endpoint-engine")
+    error = _argument_error(args)
+    if error:
+        parser.error(error)
     launch_args = (
         args.code_mode,
         args.max_provider_requests,
@@ -450,7 +494,9 @@ def main() -> None:
         args.thinking,
         args.thinking_format,
     )
-    if args.endpoint_engine is None:
+    if args.nim_context_window is not None:
+        asyncio.run(serve(*launch_args, nim_context_window=args.nim_context_window))
+    elif args.endpoint_engine is None:
         asyncio.run(serve(*launch_args))
     else:
         asyncio.run(

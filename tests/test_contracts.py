@@ -493,3 +493,29 @@ def test_each_payload_component_required(
             path.touch()
     with pytest.raises(RuntimeError, match="^The pinned runtime payload is missing$"):
         runtime.command({}, tmp_path / "settings", tmp_path, "code")
+
+
+def test_nim_base_url_reaches_pi_models(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(runtime, "__file__", str(tmp_path / "runtime.py"))
+    make_payload(tmp_path, LOCALPI_PAYLOAD)
+    monkeypatch.setenv("PATH", "/usr/bin")
+    settings, logs = tmp_path / "settings", tmp_path / "logs"
+    args, _ = runtime.command(
+        {"id": "private/vendor/model"},
+        settings,
+        logs,
+        "code",
+        thinking="xhigh",
+        base_url="https://integrate.api.nvidia.com/v1",
+    )
+    assert args[args.index("--thinking") + 1] == "xhigh"
+    provider = json.loads((settings / "models.json").read_text())["providers"][
+        "hf-pinned"
+    ]
+    assert provider["baseUrl"] == "https://integrate.api.nvidia.com/v1"
+    with pytest.raises(ValueError, match="HF router or NVIDIA NIM"):
+        runtime.command(
+            {"id": "x"}, settings, logs, "code", base_url="https://other.example/v1"
+        )

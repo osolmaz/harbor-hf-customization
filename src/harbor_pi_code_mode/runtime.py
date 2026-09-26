@@ -5,11 +5,11 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from harbor_pi_code_mode.models import ROUTER
+from harbor_pi_code_mode.models import NIM_ENDPOINT, ROUTER
 
 CodeMode = Literal["direct", "code"]
 Launcher = Literal["pi", "localpi"]
-ThinkingLevel = Literal["off", "low", "medium", "high"]
+ThinkingLevel = Literal["off", "low", "medium", "high", "xhigh"]
 ThinkingFormat = Literal["none", "qwen-chat-template"]
 EndpointEngine = Literal["vllm", "llama-cpp"]
 
@@ -32,6 +32,7 @@ def command(
     endpoint_engine: EndpointEngine | None = None,
     endpoint_base_url: str | None = None,
     thinking_budget: int | None = None,
+    base_url: str = ROUTER,
 ) -> tuple[list[str], dict[str, str]]:
     _validate(
         code_mode,
@@ -110,7 +111,16 @@ def command(
             env,
         )
     return _pi_command(
-        model, settings, logs, node, pi, forwarded, thinking, thinking_format, env
+        model,
+        settings,
+        logs,
+        node,
+        pi,
+        forwarded,
+        thinking,
+        thinking_format,
+        env,
+        base_url,
     )
 
 
@@ -130,8 +140,8 @@ def _validate(
         raise ValueError("The continuation limit cannot be negative")
     if max_output_tokens is not None and max_output_tokens < 1:
         raise ValueError("The output token limit must be positive")
-    if thinking not in {"off", "low", "medium", "high"}:
-        raise ValueError("Thinking must be off, low, medium or high")
+    if thinking not in {"off", "low", "medium", "high", "xhigh"}:
+        raise ValueError("Thinking must be off, low, medium, high or xhigh")
     if thinking_format not in {"none", "qwen-chat-template"}:
         raise ValueError("Thinking format must be none or qwen-chat-template")
 
@@ -221,14 +231,17 @@ def _pi_command(
     thinking: str,
     thinking_format: str,
     env: dict[str, str],
+    base_url: str = ROUTER,
 ) -> tuple[list[str], dict[str, str]]:
+    if base_url not in (ROUTER, NIM_ENDPOINT):
+        raise ValueError("The Pi launcher supports only the HF router or NVIDIA NIM")
     env["PI_CODING_AGENT_DIR"] = str(settings)
     (settings / "models.json").write_text(
         json.dumps(
             {
                 "providers": {
                     PROVIDER: {
-                        "baseUrl": ROUTER,
+                        "baseUrl": base_url,
                         "api": "openai-completions",
                         "apiKey": "${OPENAI_API_KEY}",
                         "models": [_thinking_model(model, thinking_format)],
