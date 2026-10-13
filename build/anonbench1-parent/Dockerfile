@@ -7,7 +7,7 @@
 #
 # The operator points HARBOR_HF_PARENT_IMAGE at the pushed image digest. The
 # wheel carries no credentials and no task data.
-FROM ghcr.io/huggingface/harbor-hf-trial-worker@sha256:f01b7ce139cd705a752411417fbd5d4783fc9f128b0dd156b32d5f2ee8103417
+FROM ghcr.io/huggingface/harbor-hf-trial-worker@sha256:0a558752a63508d46071c3427b9b5faa01288bc06a90817804425a909440c3ef
 
 COPY packages/anonbench1-adapters/dist/harbor_anonbench1_adapters-0.1.0rc5-py3-none-any.whl /tmp/
 
