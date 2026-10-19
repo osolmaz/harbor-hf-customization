@@ -90,5 +90,6 @@ forbidden_modules = ["harbor_pi_code_mode.agent"]
 
 [tool.mutmut]
 source_paths = ["src/harbor_pi_code_mode/"]
+also_copy = ["scripts/"]
 pytest_add_cli_args_test_selection = ["tests/"]
 pytest_add_cli_args = ["--no-cov"]
