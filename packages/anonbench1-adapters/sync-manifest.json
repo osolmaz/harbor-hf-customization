@@ -1,14 +1,33 @@
 {
   "files": {
-    "anonbench1_evidence.mjs": "a106927137bb8a4e18211576b211136a5be6d339caf24fc23eadc78daef4136a",
-    "anonbench1_hermes.py": "9fdcc706e3d30b3ea0f8882e29e6b095fbed2bb927033779ac3c940d225a190c",
-    "anonbench1_offline_pi.py": "36d9ae6d482c865820eebc91a9b1c8b20d49763ff3556b6a68b737c736eca10a",
-    "anonbench1_offline_session.mjs": "ee871568158830e5ba770491be7855f29c2cbf22f22fe853c53a258a84ec8d16",
-    "anonbench1_offline_task_helper.mjs": "94302af471b341dc93101515a77ceeda1b740dcb8e102f45474caea24faab931",
-    "anonbench1_offline_tools.mjs": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93",
-    "anonbench1_openclaw.py": "5303dcd9f11ec10e7345e19189363462fdba5d1535db14f3c69a38ec71ba20e0",
-    "anonbench1_pi.py": "725add7c1a9372eea74b0cbc245a00bb563a972551e6d6f891376b52ba07a499",
-    "anonbench1_pins.py": "e840d9d1757972bb10b122d3983a10f6c3471d84392903f8ffcf3fbf06739736"
+    "anonbench1_pi.py": "9cd9775e628687ba735a4bbdc29e8840af729f506b82e7184cb26310e48a2f94",
+    "anonbench1_pins.py": "e90f5de576e9e61711dd98bb071803458504827e1987db53e45c2f587720331e",
+    "campaign_evidence.mjs": "3f644c06a3bb11483eb35dcadd9a0c182827d0c04c22b80f789104268785973a",
+    "observed_claude_code.py": "1121c96c8fbc2ad93ec1fe7d28a4937d3e861d83a90228c3515140ef7baa79f6",
+    "observed_codex.py": "18bf50e8d7a9a0753217506efe72000a93852e2501e897dda161b9382296af9d",
+    "offline_pi.py": "b97c958b05dad06811c53408b19289ddc9e3c8077d289b6f3cb9e8dcd18df5d5",
+    "offline_session.mjs": "4fb6baee8a03e4936022732489f85ffd95ce6c5bc2d60f1736ed81fb1f07c453",
+    "offline_task_helper.mjs": "13288fd2188fc65f5f6b2902d9ec24faa77a1263e2cc4d7abaeb1a50e06ec5e2",
+    "offline_tools.mjs": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93",
+    "resource_telemetry.py": "aa5134f2dc469a65e74f18e7fff643373a0cda92d3323b2a0eeb50956a7f45de",
+    "retained_codex.py": "c79ad92ea1642c6129bdeeab1ea3123f3ca0e6c72f24ec138d25188f0e42cd97",
+    "retained_codex_probe.py": "ba4e7800f02878c369613561afb1f808b12d4bc235fcc7b94846b0cb20cd1e87",
+    "standalone_observations.py": "f8fa5e4f5508048ac62570991e122013d818a61fb2500691dcc2ea123742c964"
   },
-  "source_revision": "972f4d5ec52a89139aad614233c2eab1cc593904"
+  "source_files": {
+    "anonbench1_pi.py": "f32bbee06487eb79a5bfdfaef8ffc1edbdc58801842f1d2e21b1c5e7aaa1d936",
+    "anonbench1_pins.py": "7c377888f5ee61fc3c6ff89e842cc43e29f2cd0b7904c0ba79e2d862663f0baa",
+    "campaign_evidence.mjs": "d74b586968808ca6a766ae97b9766b1d53ae1f0a9dbec7d49a3cb457521015a4",
+    "observed_claude_code.py": "c0820bb3fa29c7e78418e2e724551c701680e6883859e791cbfeccdbd330417b",
+    "observed_codex.py": "2f79be3591343a3f5c10f9f661a3bcaedb548c25a5801fe9fff437d6b944cc18",
+    "offline_pi.py": "f3970486ae087ef13946a6722f70978f079c230466acd0a3ddc67b567f7a23ee",
+    "offline_session.mjs": "4fb6baee8a03e4936022732489f85ffd95ce6c5bc2d60f1736ed81fb1f07c453",
+    "offline_task_helper.mjs": "13288fd2188fc65f5f6b2902d9ec24faa77a1263e2cc4d7abaeb1a50e06ec5e2",
+    "offline_tools.mjs": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93",
+    "resource_telemetry.py": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b",
+    "retained_codex.py": "c8989ded608326f36053b37eb52337d1c8b457252a336d904affe89c3975497e",
+    "retained_codex_probe.py": "ba4e7800f02878c369613561afb1f808b12d4bc235fcc7b94846b0cb20cd1e87",
+    "standalone_observations.py": "c6620a590f4d31d36a30b71d04a775cd4458095f0062bccc79348f7c6e9c9b29"
+  },
+  "source_revision": "d18e8e375677d8cbf7ac00c5af6ad9a359ae7b67"
 }

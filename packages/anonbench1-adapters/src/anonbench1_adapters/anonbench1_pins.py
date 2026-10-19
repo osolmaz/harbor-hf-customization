@@ -53,7 +53,7 @@ class PinnedNodeRuntime:
 
     async def exec_as_agent(self, environment, command: str, **kwargs: Any) -> Any:
         for prefix in (
-            ". ~/.nvm/nvm.sh && nvm use 22 && ",
+            ". ~/.nvm/nvm.sh && nvm use 24 >/dev/null && ",
             ". ~/.nvm/nvm.sh; ",
         ):
             if command.startswith(prefix):

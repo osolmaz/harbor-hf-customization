@@ -1,11 +1,11 @@
 [project]
 name = "harbor-anonbench1-adapters"
-version = "0.1.0rc5"
-description = "Pinned native Harbor adapters for the Anonbench1 pi, OpenClaw, and Hermes runs"
+version = "0.1.0rc6"
+description = "Pinned native Harbor adapters for the Anonbench1 Pi, Codex, and Claude Code runs"
 requires-python = ">=3.12"
 license = "MIT"
 # Runtime dependency note: harbor comes from the parent worker image, which pins
-# harbor-framework/harbor@3c823808 (the launch contract). The wheel declares no
+# harbor-framework/harbor@11a0fe2d (the launch contract). The wheel declares no
 # dependencies so installing it can never move the Harbor revision the launch
 # contract checks. The dev group pins the same upstream commit for the tests.
 dependencies = []
@@ -19,8 +19,9 @@ packages = ["src/anonbench1_adapters"]
 
 [dependency-groups]
 dev = [
-    "harbor @ git+https://github.com/harbor-framework/harbor.git@3c82380859d187957cfd5cd64802b076d9779550",
+    "harbor @ git+https://github.com/harbor-framework/harbor.git@11a0fe2d3305e144a5e8af625d50a7394f293f75",
     "agent-client-protocol==0.12.1",
+    "litellm==1.104.1",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
@@ -46,19 +47,35 @@ respect-type-ignore-comments = false
 # The synced adapter modules are generated copies (see the ruff exclude note).
 exclude = [
   "src/anonbench1_adapters/anonbench1_pi.py",
-  "src/anonbench1_adapters/anonbench1_openclaw.py",
-  "src/anonbench1_adapters/anonbench1_hermes.py",
   "src/anonbench1_adapters/anonbench1_pins.py",
-  "src/anonbench1_adapters/anonbench1_offline_pi.py",
+  "src/anonbench1_adapters/offline_pi.py",
+  "src/anonbench1_adapters/resource_telemetry.py",
+  "src/anonbench1_adapters/standalone_observations.py",
+  "src/anonbench1_adapters/observed_codex.py",
+  "src/anonbench1_adapters/retained_codex.py",
+  "src/anonbench1_adapters/retained_codex_probe.py",
+  "src/anonbench1_adapters/observed_claude_code.py",
 ]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers --cov=anonbench1_adapters --cov-branch --cov-fail-under=85"
+addopts = "--strict-config --strict-markers --cov-config=packages/anonbench1-adapters/pyproject.toml --cov=anonbench1_adapters --cov-branch --cov-fail-under=85"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["anonbench1_adapters"]
+# Generated source has separate provenance and upstream protocol checks.
+omit = [
+  "*/anonbench1_adapters/anonbench1_pi.py",
+  "*/anonbench1_adapters/anonbench1_pins.py",
+  "*/anonbench1_adapters/offline_pi.py",
+  "*/anonbench1_adapters/resource_telemetry.py",
+  "*/anonbench1_adapters/standalone_observations.py",
+  "*/anonbench1_adapters/observed_codex.py",
+  "*/anonbench1_adapters/retained_codex.py",
+  "*/anonbench1_adapters/retained_codex_probe.py",
+  "*/anonbench1_adapters/observed_claude_code.py",
+]
 
 [tool.ruff]
 line-length = 88
@@ -68,10 +85,14 @@ target-version = "py312"
 # renames. Formatting them would break the sync, so they stay outside ruff.
 extend-exclude = [
   "src/anonbench1_adapters/anonbench1_pi.py",
-  "src/anonbench1_adapters/anonbench1_openclaw.py",
-  "src/anonbench1_adapters/anonbench1_hermes.py",
   "src/anonbench1_adapters/anonbench1_pins.py",
-  "src/anonbench1_adapters/anonbench1_offline_pi.py",
+  "src/anonbench1_adapters/offline_pi.py",
+  "src/anonbench1_adapters/resource_telemetry.py",
+  "src/anonbench1_adapters/standalone_observations.py",
+  "src/anonbench1_adapters/observed_codex.py",
+  "src/anonbench1_adapters/retained_codex.py",
+  "src/anonbench1_adapters/retained_codex_probe.py",
+  "src/anonbench1_adapters/observed_claude_code.py",
 ]
 
 [tool.ruff.lint]

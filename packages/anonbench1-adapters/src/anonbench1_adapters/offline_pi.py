@@ -16,6 +16,7 @@ from pathlib import Path
 
 from harbor.environments.base import BaseEnvironment
 from harbor.models.task.config import NetworkMode
+from anonbench1_adapters.resource_telemetry import observe_process
 
 
 class OfflineTransportError(RuntimeError):
@@ -110,7 +111,7 @@ class OfflinePiTools:
         await self.environment.upload_dir(self.node_dir, f"{self.root}/node")
         await self.environment.upload_dir(self.pi_dir, f"{self.root}/pi")
         await self.environment.upload_file(
-            Path(__file__).with_name("anonbench1_offline_task_helper.mjs"), f"{self.root}/helper.mjs"
+            Path(__file__).with_name("offline_task_helper.mjs"), f"{self.root}/helper.mjs"
         )
         entry = f"{self.root}/pi/node_modules/@earendil-works/pi-coding-agent/dist/index.js"
         command = (
@@ -122,7 +123,7 @@ class OfflinePiTools:
         )
         await self._exec(command)
         ready = await self._wait("ready")
-        if ready["node"] != "v26.11.1" or ready["pi"] != "1.1.0":
+        if ready["node"] != "v26.11.1" or ready["pi"] != "1.3.0":
             raise RuntimeError("Offline Pi runtime pin mismatch")
         return ready
 
@@ -208,86 +209,87 @@ class OfflinePiTools:
         calls = {}
         seen = set()
         lock = asyncio.Lock()
-        fatal = asyncio.get_running_loop().create_future()
+        with observe_process(process.pid):
+            fatal = asyncio.get_running_loop().create_future()
 
-        async def send(message):
-            async with lock:
-                process.stdin.write((json.dumps(message) + "\n").encode())
-                await process.stdin.drain()
+            async def send(message):
+                async with lock:
+                    process.stdin.write((json.dumps(message) + "\n").encode())
+                    await process.stdin.drain()
 
-        async def invoke(message):
-            identifier = message["id"]
-
-            async def update(result):
-                await send({"type": "update", "id": identifier, "result": result})
-
-            try:
-                result = await self.call(
-                    message["tool"],
-                    message["callId"],
-                    message["args"],
-                    update,
-                    message.get("context"),
-                )
-                response = {"id": identifier, "ok": True, "result": result}
-            except RemoteCallCancelled:
-                response = {"id": identifier, "ok": False, "error": "aborted; remote call settled"}
-            except RemoteToolError as error:
-                response = {"id": identifier, "ok": False, "error": str(error)}
-            except (OfflineTransportError, OSError, ValueError, KeyError, TypeError) as error:
-                if not fatal.done():
-                    fatal.set_result(error)
-                return
-            await send(response)
-
-        stderr = asyncio.create_task(process.stderr.read())
-        try:
-            while True:
-                read = asyncio.create_task(process.stdout.readline())
-                try:
-                    await asyncio.wait((read, fatal), return_when=asyncio.FIRST_COMPLETED)
-                    if fatal.done():
-                        raise fatal.result()
-                    line = read.result()
-                finally:
-                    if not read.done():
-                        read.cancel()
-                    await asyncio.gather(read, return_exceptions=True)
-                if not line:
-                    break
-                message = json.loads(line)
+            async def invoke(message):
                 identifier = message["id"]
-                if message["type"] == "call" and identifier not in seen:
-                    seen.add(identifier)
-                    calls[identifier] = asyncio.create_task(invoke(message))
-                elif message["type"] == "cancel" and identifier in calls:
-                    calls[identifier].cancel()
-                else:
-                    raise RuntimeError("Invalid host tool protocol")
-            await process.wait()
-            if process.returncode:
-                raise RuntimeError((await stderr).decode())
-        finally:
 
-            async def cleanup():
-                # EOF rejects the SDK's pending IPC promises without claiming
-                # remote settlement. Its SIGTERM handler can then finish abort.
-                process.stdin.close()
-                for task in calls.values():
-                    if not task.done():
-                        task.cancel()
-                await asyncio.gather(*calls.values(), return_exceptions=True)
-                if process.returncode is None:
-                    process.terminate()
+                async def update(result):
+                    await send({"type": "update", "id": identifier, "result": result})
+
+                try:
+                    result = await self.call(
+                        message["tool"],
+                        message["callId"],
+                        message["args"],
+                        update,
+                        message.get("context"),
+                    )
+                    response = {"id": identifier, "ok": True, "result": result}
+                except RemoteCallCancelled:
+                    response = {"id": identifier, "ok": False, "error": "aborted; remote call settled"}
+                except RemoteToolError as error:
+                    response = {"id": identifier, "ok": False, "error": str(error)}
+                except (OfflineTransportError, OSError, ValueError, KeyError, TypeError) as error:
+                    if not fatal.done():
+                        fatal.set_result(error)
+                    return
+                await send(response)
+
+            stderr = asyncio.create_task(process.stderr.read())
+            try:
+                while True:
+                    read = asyncio.create_task(process.stdout.readline())
                     try:
-                        async with asyncio.timeout(5):
-                            await process.wait()
-                    except TimeoutError:
-                        # Only the child created above belongs to this owner.
-                        process.kill()
-                        await process.wait()
-                await stderr
+                        await asyncio.wait((read, fatal), return_when=asyncio.FIRST_COMPLETED)
+                        if fatal.done():
+                            raise fatal.result()
+                        line = read.result()
+                    finally:
+                        if not read.done():
+                            read.cancel()
+                        await asyncio.gather(read, return_exceptions=True)
+                    if not line:
+                        break
+                    message = json.loads(line)
+                    identifier = message["id"]
+                    if message["type"] == "call" and identifier not in seen:
+                        seen.add(identifier)
+                        calls[identifier] = asyncio.create_task(invoke(message))
+                    elif message["type"] == "cancel" and identifier in calls:
+                        calls[identifier].cancel()
+                    else:
+                        raise RuntimeError("Invalid host tool protocol")
+                await process.wait()
+                if process.returncode:
+                    raise RuntimeError((await stderr).decode())
+            finally:
 
-            await self._finish_owned(asyncio.create_task(cleanup()))
-        if fatal.done():
-            raise fatal.result()
+                async def cleanup():
+                    # EOF rejects the SDK's pending IPC promises without claiming
+                    # remote settlement. Its SIGTERM handler can then finish abort.
+                    process.stdin.close()
+                    for task in calls.values():
+                        if not task.done():
+                            task.cancel()
+                    await asyncio.gather(*calls.values(), return_exceptions=True)
+                    if process.returncode is None:
+                        process.terminate()
+                        try:
+                            async with asyncio.timeout(5):
+                                await process.wait()
+                        except TimeoutError:
+                            # Only the child created above belongs to this owner.
+                            process.kill()
+                            await process.wait()
+                    await stderr
+
+                await self._finish_owned(asyncio.create_task(cleanup()))
+            if fatal.done():
+                raise fatal.result()

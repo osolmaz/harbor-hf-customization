@@ -1,30 +1,23 @@
-"""Attested entry points for the copied Anonbench1 adapters.
+"""Native adapters with strict version selection and setup attestation."""
 
-The `anonbench1_pi`, `anonbench1_openclaw`, and `anonbench1_hermes` modules are
-verbatim copies of the reviewed harbor-config adapters, kept 1-1 by
-`scripts/sync_anonbench1_adapters.py`. This module adds exactly one behavior on
-top: `setup()` re-verifies the installed agent version against the pin and
-fails the trial on any mismatch, so a run cannot silently test a different
-build. That is the failure mode of the 2026-10-06 overnight runs, which spent
-about USD 246 on harness builds the operator did not ask for.
-
-The Harbor-HF agent presets reference these classes, not the copied ones.
-"""
-
-from typing import override
+from typing import Any, override
 
 from harbor.environments.base import BaseEnvironment
 
-from anonbench1_adapters.anonbench1_hermes import Anonbench1Hermes as _CopiedHermes
-from anonbench1_adapters.anonbench1_openclaw import (
-    Anonbench1OpenClaw as _CopiedOpenClaw,
-)
 from anonbench1_adapters.anonbench1_pi import Anonbench1Pi as _CopiedPi
+from anonbench1_adapters.anonbench1_pins import require_version
 from anonbench1_adapters.attestation import attest_version
+from anonbench1_adapters.hf_connection import claude_environment
+from anonbench1_adapters.observed_claude_code import ObservedClaudeCode
+from anonbench1_adapters.observed_codex import ObservedCodex
 
 
 class Anonbench1Pi(_CopiedPi):
-    """The copied Pi adapter, plus build attestation in setup."""
+    """Pi with the reviewed runtime and setup attestation."""
+
+    def __init__(self, *args: Any, version: str = "1.3.0", **kwargs: Any) -> None:  # noqa: ANN401 - Harbor constructor kwargs vary by adapter.
+        require_version(version, "1.3.0")
+        super().__init__(*args, version=version, **kwargs)
 
     @override
     async def setup(self, environment: BaseEnvironment) -> None:
@@ -32,19 +25,30 @@ class Anonbench1Pi(_CopiedPi):
         await attest_version(self, environment, "pi")
 
 
-class Anonbench1OpenClaw(_CopiedOpenClaw):
-    """The copied OpenClaw adapter, plus build attestation in setup."""
+class Anonbench1Codex(ObservedCodex):
+    """Native Codex with resource observations and setup attestation."""
+
+    def __init__(self, *args: Any, version: str = "0.163.0", **kwargs: Any) -> None:  # noqa: ANN401 - Harbor constructor kwargs vary by adapter.
+        require_version(version, "0.163.0")
+        super().__init__(*args, version=version, **kwargs)
 
     @override
     async def setup(self, environment: BaseEnvironment) -> None:
         await super().setup(environment)
-        await attest_version(self, environment, "openclaw")
+        await attest_version(self, environment, "codex")
 
 
-class Anonbench1Hermes(_CopiedHermes):
-    """The copied Hermes adapter, plus build attestation in setup."""
+class Anonbench1ClaudeCode(ObservedClaudeCode):
+    """Native Claude Code with resource observations and setup attestation."""
+
+    def __init__(self, *args: Any, version: str = "2.1.292", **kwargs: Any) -> None:  # noqa: ANN401 - Harbor constructor kwargs vary by adapter.
+        require_version(version, "2.1.292")
+        kwargs["extra_env"] = claude_environment(
+            kwargs.get("extra_env") or {}, kwargs.get("model_name") or ""
+        )
+        super().__init__(*args, version=version, **kwargs)
 
     @override
     async def setup(self, environment: BaseEnvironment) -> None:
         await super().setup(environment)
-        await attest_version(self, environment, "hermes")
+        await attest_version(self, environment, "claude-code")

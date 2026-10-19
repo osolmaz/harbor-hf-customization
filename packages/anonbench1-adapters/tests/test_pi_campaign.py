@@ -6,8 +6,9 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
+from harbor.models.agent.context import AgentContext
 from harbor.models.task.config import MCPServerConfig
-from test_pins import offline_env
+from test_runtime import offline_env
 
 from anonbench1_adapters import anonbench1_pi
 from anonbench1_adapters.anonbench1_pi import Anonbench1Pi
@@ -17,7 +18,7 @@ ENV = {"OPENAI_BASE_URL": "https://router.huggingface.co/v1", "OPENAI_API_KEY": 
 
 
 def make_agent(tmp_path: Path, **kwargs: object) -> Anonbench1Pi:
-    options = {"version": "1.1.0", "model_api": "openai-completions"}
+    options = {"version": "1.3.0", "model_api": "openai-completions"}
     return Anonbench1Pi(
         logs_dir=tmp_path,
         model_name=MODEL,
@@ -144,7 +145,7 @@ async def test_run_wires_mcp_and_max_turns_extensions(
         return None
 
     monkeypatch.setattr(Anonbench1Pi, "_check_required_mcp", ready)
-    await agent.run("task", offline_env(), context=None)
+    await agent.run("task", offline_env(), context=AgentContext())
     commands = [
         call.kwargs["command"]
         for call in agent.exec_as_agent.call_args_list  # ty: ignore[unresolved-attribute]
@@ -159,7 +160,7 @@ async def test_run_rejects_a_wrong_version_before_any_command(
     agent = make_agent(tmp_path, version="1.0.2")
     mock_run_internals(agent, tmp_path, monkeypatch)
     with pytest.raises(ValueError, match="requires version"):
-        await agent.run("task", offline_env(), context=None)
+        await agent.run("task", offline_env(), context=AgentContext())
     assert agent.exec_as_agent.await_count == 0  # ty: ignore[unresolved-attribute]
 
 
@@ -190,7 +191,7 @@ def test_populate_keeps_recorded_usage_but_still_writes_evidence(
         anonbench1_pi.Pi, "populate_context_post_run", lambda self, context: None
     )
     context = _Context()
-    agent.populate_context_post_run(context)  # ty: ignore[invalid-argument-type]
+    agent.populate_context_post_run(context)
     saved = json.loads((tmp_path / "trajectory.json").read_text())
     qualification = saved["final_metrics"]["extra"]["pi_research_evidence"]
     assert qualification["model_mismatch"] is False
@@ -230,7 +231,7 @@ def test_populate_nulls_all_zero_usage(tmp_path: Path, monkeypatch) -> None:
     context.n_output_tokens = 0
     context.n_cache_tokens = 0
     context.cost_usd = 0
-    agent.populate_context_post_run(context)  # ty: ignore[invalid-argument-type]
+    agent.populate_context_post_run(context)
     assert context.n_input_tokens is None
     assert context.cost_usd is None
     saved = json.loads((tmp_path / "trajectory.json").read_text())

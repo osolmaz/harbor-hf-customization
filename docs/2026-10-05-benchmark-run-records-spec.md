@@ -1,6 +1,6 @@
 ---
 date: 2026-10-05
-author: Onur Solmaz <2453968+osolmaz@users.noreply.github.com>
+author: Onur Solmaz
 title: Self-contained benchmark run records
 tags: [runs, harnesses, harbor, reproducibility, spec]
 ---
