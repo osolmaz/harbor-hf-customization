@@ -12,7 +12,7 @@ agents:
     model_name: UNRESOLVED/UNRESOLVED
     override_setup_timeout_sec: 1200
     kwargs:
-      version: "2026.10.4"
+      version: "2026.10.5"
       code_mode: true
       runtime: UNRESOLVED
       model_api: UNRESOLVED
