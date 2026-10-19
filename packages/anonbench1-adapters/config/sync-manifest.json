@@ -10,8 +10,8 @@
     "hermes/job-template.yaml": "071e211d9fb6c8e04fdbb2e31d6d3b947643a4e99cf3589c5b4518083a26cf9b",
     "hermes/pins.json": "2cc993bf1dee7f9bd089ca18a9492680d9e90d8f4c51a861b1c7ef54fcebc882",
     "openclaw/harbor.json": "888c5b002386df58a90ef701f84f92d0486d77d7b36ef95bd79406243ce2d00f",
-    "openclaw/job-template.yaml": "15399a81f3455e4b547226bb040312c1291e35b75e6c6d03314a30ae26b94a2d",
-    "openclaw/pins.json": "4f15690cc8ca5cf2835bc1d2ac91df2d827f9c1f13c5b08ac35a2af9a865cd47",
+    "openclaw/job-template.yaml": "87b421091420d0bad7141397e39d5afd502a13790152aeb971379b6438e83834",
+    "openclaw/pins.json": "f2686a0e9bb25fea0c8e91a520dc699c4db6ab90f005aa4aa7de47382d35de30",
     "pi/harbor.json": "888c5b002386df58a90ef701f84f92d0486d77d7b36ef95bd79406243ce2d00f",
     "pi/job-template.yaml": "2e14b02765af8f197dd6fc07aa89775415278978b07c03eb0bbbb9494645d796",
     "pi/pins.json": "4ea5174cf3b2342ad595bc562de9c6dbc42d8044b36fb7fd5ef8c89590ff0b07"
@@ -27,11 +27,11 @@
     "hermes/job-template.yaml": "d9e88ffd7b023093e6c78c0c710f67961d73f24ebab13d6b0743d9bc259d3207",
     "hermes/pins.json": "1289d903377b4a2accece6e0912aa06abf760f47cbd3e6b031be5c7362fbf203",
     "openclaw/harbor.json": "e4b749e2e1444f7473a20c0af9dea3aaa1ee899df7f76c55926abff72d8b77c1",
-    "openclaw/job-template.yaml": "aee8361f4dee9287fb078a58688db8a467d9163ddb20e060ed3beac62e16829f",
-    "openclaw/pins.json": "a56b268d0095e698d09484dc80ef1f8e75a88c41e1923f7fb9634380e7e44f0c",
+    "openclaw/job-template.yaml": "8b27bc0a1b8798b609269e66ab4b9127f74d75962d920e9180eb86bbfdd18e96",
+    "openclaw/pins.json": "2484c41874c9760e0df51eee28ea1597194acf42e6c62fd6ae9c4b1618daafd8",
     "pi/harbor.json": "e4b749e2e1444f7473a20c0af9dea3aaa1ee899df7f76c55926abff72d8b77c1",
     "pi/job-template.yaml": "311cd41172c03b5e54d07e6d212f7971fb77f98e6092f08154506158b438872b",
     "pi/pins.json": "80938685c49ba516c82e56fdc8ffc03c89209cbc7bd8ac320df856e2a1fc345e"
   },
-  "source_revision": "d15fe9a942f292967e6272234850336b29e30f54"
+  "source_revision": "d18e8e375677d8cbf7ac00c5af6ad9a359ae7b67"
 }

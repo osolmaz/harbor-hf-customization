@@ -1,11 +1,11 @@
 {
   "agent": "openclaw",
-  "release": "https://github.com/openclaw/openclaw/tree/f63d76311346250347426b4968d379b537b122a2",
+  "release": "https://github.com/openclaw/openclaw/releases/tag/v2026.10.5",
   "packages": [
     {
       "registry": "npm",
       "name": "openclaw",
-      "version": "2026.10.4",
+      "version": "2026.10.5",
       "installed_by": "prepare_runtime.py: exact custom bundled package and frozen npm lock from the external manifest"
     },
     {
@@ -24,13 +24,13 @@
   "harbor_agent": {
     "import_path": "campaign_openclaw:Anonbench1OpenClaw",
     "kwargs": {
-      "version": "2026.10.4"
+      "version": "2026.10.5"
     }
   },
   "adapter": {
     "file": "adapter/campaign_openclaw.py",
     "base": "harbor/agents/installed/openclaw.py at the pinned Harbor commit",
-    "copied_from": "2026-10-13 runtime successor; source admission, provenance and current native pins updated in this unlaunched run"
+    "copied_from": "2026-10-15 successor; release/source/dependency/schema pins updated only; native behavior and admission guards retained"
   },
   "runtime_policy": {
     "field": "openclaw_config.agents.defaults.models.<provider/model>.agentRuntime.id",
@@ -41,21 +41,21 @@
   },
   "enforcement": "Existing digest-bound manifest and complete source inventory checked at setup/install and run; imported modules must belong to prepared source. Verified helper bytes are uploaded. Native context retains exact admitted identities.",
   "native_candidate": {
-    "base_commit": "f63d76311346250347426b4968d379b537b122a2",
-    "candidate_commit": "f63d76311346250347426b4968d379b537b122a2",
-    "managed_codex_commit": "c1382380de69521303b416720a52f42d51af6248",
-    "managed_codex_version": "0.162.0",
+    "base_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+    "candidate_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+    "managed_codex_commit": "a956835d020762cb2b570053af06f643a11c0ecc",
+    "managed_codex_version": "0.160.0",
     "distribution": "custom-bundled-distribution",
     "plugin": "dist/extensions/codex",
     "shutdown_policy": {
       "file": "gateway-shutdown-budget.mjs",
-      "bytes": 3314,
-      "sha256": "02757141fd71a0e03ee885d952edbcd664395a420b26c6b7ba596529336baa3a"
+      "bytes": 3321,
+      "sha256": "0d45e39342a03112a5b3a843e365add10d4423da16c691636d845d40ebbcb360"
     },
-    "candidate_tree": "e1b3b9ee2dd1a465412bf8ceb8b6f3dc6407e406",
-    "managed_codex_tree": "4899ef4940a8bc7fdf7873aa0d3f438085b8163f",
-    "fs_safe_version": "0.26.6",
-    "state_schema_version": 26,
+    "candidate_tree": "a138559698570e238395121723a773106ac33f8c",
+    "managed_codex_tree": "c09968bc06fc543c9d8bd9ffbaaa72829b31f5d9",
+    "fs_safe_version": "0.25.0",
+    "state_schema_version": 20,
     "bundled_plugins": [
       "codex",
       "diagnostics-otel"
@@ -63,7 +63,7 @@
   },
   "preparation": {
     "file": "adapter/prepare_runtime.py",
-    "source_preparer_sha256": "24f1237750bf71386c1dcc5a71c5f3636179e028dbb749a709a8229fb0210613",
+    "source_preparer_sha256": "1278f922233e296c8683d89eeb36e1e42f11c40babefc115ddd051c0927068f3",
     "python": "3.12.11",
     "uv": "0.12.23",
     "platform": "linux-x86_64",
@@ -77,7 +77,7 @@
     },
     "openclaw/adapter/campaign_openclaw.py": {
       "bytes": 87180,
-      "sha256": "9984f3f7cbf6a612587a568f3599518fab80b49506994b128b3523da68b0c4b9"
+      "sha256": "1e7abd3a21707fa319f148a76faacf6af5ef8eb8e78251699971aeb3d185068d"
     },
     "openclaw/adapter/catalog-diagnostic/index.mjs": {
       "bytes": 4327,
@@ -89,7 +89,7 @@
     },
     "openclaw/adapter/gateway_session.mjs": {
       "bytes": 43753,
-      "sha256": "f1b6940faaa43e1f113451262a2219bd3df28ea2924234529390a32d1f9ed6f4"
+      "sha256": "fc7083286fd6ba65d6ac17df55a82e659f5b112f4eacc72d6fe3f48aec479a63"
     },
     "openclaw/adapter/harbor-sandbox/index.mjs": {
       "bytes": 10851,
@@ -109,7 +109,7 @@
     },
     "openclaw/adapter/prepare_runtime.py": {
       "bytes": 52824,
-      "sha256": "24f1237750bf71386c1dcc5a71c5f3636179e028dbb749a709a8229fb0210613"
+      "sha256": "1278f922233e296c8683d89eeb36e1e42f11c40babefc115ddd051c0927068f3"
     },
     "openclaw/adapter/qualify_openclaw.py": {
       "bytes": 11103,
@@ -122,19 +122,18 @@
   },
   "unpinned": [],
   "final_eval_selection": {
-    "status": "build_verified_native_qualification_pending",
+    "status": "release_pins_verified_build_and_native_qualification_pending",
     "policy": "one unmodified upstream main commit or release tag, resolved to a full commit SHA and tree",
     "policy_owner": ".agents/skills/anonbench1-run/SKILL.md",
-    "selected_commit": "f63d76311346250347426b4968d379b537b122a2",
-    "selected_tree": "e1b3b9ee2dd1a465412bf8ceb8b6f3dc6407e406",
-    "selected_package_version": "2026.10.4",
-    "upstream_ref": "refs/heads/main",
+    "selected_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+    "selected_tree": "a138559698570e238395121723a773106ac33f8c",
+    "selected_package_version": "2026.10.5",
+    "upstream_ref": "refs/tags/v2026.10.5",
     "upstream_provenance_verified": true,
-    "verified_at": "2026-10-17T00:42:26Z",
-    "upstream_evidence": "https://api.github.com/repos/openclaw/openclaw/compare/f63d76311346250347426b4968d379b537b122a2...main",
-    "package_json_blob": "8b3107654fded6b9aea96ffa9e01e13c84a72316",
-    "reason": "Includes the landed native tool-outcome and trajectory repairs plus the missing Windows recovery-helper asset fix. Build the unchanged native dependency graph and qualify package, catalog, Trial, accounting and retention.",
-    "scope": "Unmodified native package and focused source tests passed. This adapter still needs fresh catalog, verifier-enabled Trial, accounting and retention qualification.",
+    "verified_at": "2026-10-19T09:07:48.325319+00:00",
+    "upstream_evidence": "https://api.github.com/repos/openclaw/openclaw/git/ref/tags/v2026.10.5",
+    "reason": "Explicit latest stable release request. Registry tarball integrity and embedded build/source identity match this release tag. Earlier main-based benchmark receipts do not qualify it.",
+    "scope": "Pin and published-byte provenance only; fresh native bundle build, source-contract checks, catalog, verifier-enabled Trial, accounting and retention remain pending.",
     "exporter_source_selection": {
       "repository": "https://github.com/openclaw/openclaw-atif",
       "commit": "8104f23723de448ebe5a0c715a047b76391bbd3c",
@@ -156,51 +155,134 @@
       }
     },
     "native_build_inputs": {
-      "package_manager": "pnpm@12.11.1+sha512.5b0e3288239a7ea4155d2094f547066e122a1376b3cd785a680c9112e116913e64aaaecf20dd83cc34030fa67013f5c5511f9cf430dd8384188b4c60b8a2ad1e",
+      "package_manager": "pnpm@12.9.0+sha512.8f64efa0b792986ca98ae568791bcd7722807e274c4f0c1d9853c62116495c584119db98762a2a5343b1684d361b9ae26fdd16d551666d7635346d3fae830ddd",
       "bundled_plugins": [
         "codex",
         "diagnostics-otel"
       ],
       "managed_codex": {
-        "version": "0.162.0",
-        "upstream_ref": "refs/tags/rust-v0.162.0",
-        "source_commit": "c1382380de69521303b416720a52f42d51af6248",
-        "source_tree": "4899ef4940a8bc7fdf7873aa0d3f438085b8163f",
-        "linux_x64_dependency": "npm:@openai/codex@0.162.0-linux-x64",
-        "upstream_evidence": "https://api.github.com/repos/openai/codex/git/tags/1f3f93473394b620b35580859b7e6864f7a9f948"
+        "version": "0.160.0",
+        "upstream_ref": "refs/tags/rust-v0.160.0",
+        "source_commit": "a956835d020762cb2b570053af06f643a11c0ecc",
+        "source_tree": "c09968bc06fc543c9d8bd9ffbaaa72829b31f5d9",
+        "linux_x64_dependency": "npm:@openai/codex@0.160.0-linux-x64",
+        "upstream_evidence": "https://api.github.com/repos/openai/codex/git/tags/79b1b666f2e8551f8abbbca34957227f67f3f553"
       },
-      "fs_safe_version": "0.26.6",
-      "status": "source_and_registry_metadata_verified",
-      "pnpm_lock_sha256": "6f16df29196b95b14323ebfa90841dc4d80675702c5a1910cbb9cbdfe4a5314f",
-      "pnpm_workspace_sha256": "98250ba31c41428dab9299263b661fc701b641c6f4ddf5a5b699791de4f0ad06"
+      "fs_safe_version": "0.25.0",
+      "state_schema_version": 20,
+      "status": "release_source_declarations_verified_not_built",
+      "pnpm_lock_sha256": "3c34fe22f79cd2715b3d6b89b8e8ecde56b261d719daa09675696b122abe87f1",
+      "pnpm_workspace_sha256": "c95a6b7be1fa13956265abbff9bc9895064bf6677123c88314ef4dc20410bda3"
     },
-    "prior_harness_source_commit": "3edaea1b75b911c2089a440f2ca40254dc0ab618",
+    "prior_harness_source_commit": "e51178817589d74491404d5e3220a350cfe166a7",
     "harness_source_binding": "Freeze the exact repository commit and source member inventory containing this admission in the private launch packet.",
-    "superseded_source_failure": {
-      "commit": "aded33b0cef1a063fa68e6fb4e1fc4b099d04241",
-      "stage": "native_package_integrity",
-      "reason": "Two compiled recovery modules resolved a missing dist/windows-security-helper.exe after bundling fs-safe.",
-      "build_passed": true,
-      "source_tests_run": false,
-      "runtime_qualified": false,
-      "upstream_fix": "https://github.com/openclaw/openclaw/pull/174463"
-    },
-    "native_build_evidence": {
-      "status": "built_and_tested; native_trial_pending",
-      "verified_on": "2026-10-17",
-      "node": "24.19.0",
-      "pnpm": "12.11.1",
-      "source_tests_passed": 139,
-      "source_test_files": 7,
-      "package_bytes": 132666995,
-      "package_sha256": "a36fab6a737891054e5db24815ed2486c3b44b74454ecf77feece2dceb255b3c",
-      "build_receipt_sha256": "1b2f3a48da175f2bae47b010e6897a41193f9a19561ed8589d685d817e325c8d",
-      "scope": "Native two-plugin Docker package gate and focused trajectory, Codex catalog/event/managed-binary and diagnostics export tests; no model, task or retention qualification."
-    }
+    "required_fix_checks": [
+      {
+        "requirement": "current_benchmark_source",
+        "commit": "f63d76311346250347426b4968d379b537b122a2",
+        "release_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+        "comparison": "diverged",
+        "ahead_by": 475,
+        "behind_by": 5487,
+        "required_commit_is_ancestor": false
+      },
+      {
+        "requirement": "per_response_observation",
+        "commit": "a2329704f350606ce283bcd071b847c78a8d13aa",
+        "release_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+        "comparison": "diverged",
+        "ahead_by": 475,
+        "behind_by": 4964,
+        "required_commit_is_ancestor": false
+      },
+      {
+        "requirement": "pr_174398",
+        "commit": "aded33b0cef1a063fa68e6fb4e1fc4b099d04241",
+        "release_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+        "comparison": "diverged",
+        "ahead_by": 475,
+        "behind_by": 5272,
+        "required_commit_is_ancestor": false
+      },
+      {
+        "requirement": "pr_174463",
+        "commit": "f63d76311346250347426b4968d379b537b122a2",
+        "release_commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+        "comparison": "diverged",
+        "ahead_by": 475,
+        "behind_by": 5487,
+        "required_commit_is_ancestor": false
+      }
+    ],
+    "prior_openclaw_source_commit": "f63d76311346250347426b4968d379b537b122a2"
   },
   "shared_source": {
     "path": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
     "bytes": 17164,
     "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+  },
+  "published_release": {
+    "checked_at": "2026-10-19T09:07:48.325319+00:00",
+    "release_url": "https://github.com/openclaw/openclaw/releases/tag/v2026.10.5",
+    "published_at": "2026-10-18T21:47:25Z",
+    "registry": "https://registry.npmjs.org",
+    "package": "openclaw",
+    "version": "2026.10.5",
+    "tarball": "https://registry.npmjs.org/openclaw/-/openclaw-2026.10.5.tgz",
+    "integrity": "sha512-9rCuXMweqVKZIK3KBtGcLzesz9G6+FmQ30lvwomRhmcNWDcOtlBoqdLbPditoJMuTP55jPqXpt1AA0L8tSzFHg==",
+    "shasum": "158d80b43644e2feba2a50647803562aa394e080",
+    "bytes": 103343430,
+    "sha256": "dbb1bdcf2346292e25f672822b6a9928c234909abe6fee0df5fc4556e769d40e",
+    "build_info": {
+      "version": "2026.10.5",
+      "commit": "1b58cb9a1b4f4353e1add63c8506db4d890962e8",
+      "builtAt": "2026-10-18T17:23:40.943Z",
+      "buildId": "2026.10.5-release-1b58cb9a1b4f-2026-10-18T17-23-40.943Z"
+    },
+    "integrity_verified": true,
+    "source_identity_verified": true,
+    "runtime_admitted": false,
+    "scope": "Official registry baseline only. The benchmark still requires a fresh same-source native bundle with codex and diagnostics-otel; do not use this core-only tarball as that bundle.",
+    "attestation_note": "npm SLSA resolved dependency c544916c9070b65c2ec8822de01bdf99041e12cd is the publishing workflow ref, not the embedded runtime build commit; use embedded build-info and matching release tag for source identity."
+  },
+  "qualification": {
+    "build": "pending",
+    "native_source_contract": "pending",
+    "catalog": "pending",
+    "verifier_enabled_trial": "pending",
+    "accounting": "pending",
+    "remote_retention": "pending",
+    "historical_receipts_transferable": false,
+    "required_fix_inclusion": "No listed required mainline commit is an ancestor of this release tag. Equivalent backports have not been established; absence of ancestry alone does not prove absence of equivalent code."
+  },
+  "local_verification": {
+    "verified_on": "2026-10-19",
+    "repository_base": "d15fe9a942f292967e6272234850336b29e30f54",
+    "focused_outer_tests_passed": 23,
+    "release_isolated_synthetic_cases_passed": 74,
+    "changed_python_ruff": "passed",
+    "skill_validator": "passed",
+    "source_inventory_members_verified": 12,
+    "historical_run_unchanged": true,
+    "full_pytest": {
+      "passed": 278,
+      "skipped": 84,
+      "failed": 1,
+      "errors": 73,
+      "same_failures_and_errors_reproduced_on_clean_base": true,
+      "limitations": [
+        "HERMES_REASONING_SOURCE and HERMES_REASONING_CAPTURE fixtures unavailable",
+        "Existing native OTLP capture assertion fails in this environment"
+      ]
+    },
+    "full_ruff": "same four pre-existing historical-source findings as clean main",
+    "native_execution_qualified": false,
+    "portable_source_tests_passed": 18,
+    "controller_test_environment": {
+      "platform": "linux-x86_64",
+      "python": "3.12.3",
+      "uv": "0.12.3",
+      "scope": "source tests only; not the runtime preparation reference"
+    }
   }
 }

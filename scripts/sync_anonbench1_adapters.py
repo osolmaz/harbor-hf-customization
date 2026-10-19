@@ -62,7 +62,7 @@ SETTINGS_DIR = REPO_ROOT / PACKAGE / "config"
 SETTINGS_MANIFEST = SETTINGS_DIR / "sync-manifest.json"
 RUNTIME_RUNS = {
     "pi": "2026-10-16-shellbench-pi-runtime",
-    "openclaw": "2026-10-15-shellbench-openclaw-runtime",
+    "openclaw": "2026-10-19-shellbench-openclaw-runtime",
     "hermes": "2026-10-13-shellbench-hermes-runtime",
     "codex": "2026-10-17-shellbench-standalone-observations",
     "claude-code": "2026-10-17-shellbench-standalone-observations",

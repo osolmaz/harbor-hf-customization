@@ -209,9 +209,10 @@ See [the run record spec](docs/2026-10-05-benchmark-run-records-spec.md).
 ## Anonbench1 runtime settings
 
 The [staged Anonbench1 runtime settings](packages/anonbench1-adapters/config/README.md)
-record the merged configuration source for five harnesses. Their required Harbor
-revision differs from the current Harbor-HF worker. The integration notes list
-the worker and adapter changes required before those settings can be used.
+record the merged configuration source for five harnesses, including the released
+OpenClaw 2026.10.5 selection and its machine setup requirements. Harbor-HF main
+now shares the required Harbor revision. The integration notes list the remaining
+deployment, adapter packaging and qualification work before those settings can be used.
 
 ## Benchmark base images
 
