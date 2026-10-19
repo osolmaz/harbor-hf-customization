@@ -1,0 +1,65 @@
+{
+  "agent": "claude-code",
+  "release": "https://github.com/anthropics/claude-code/releases/tag/v2.1.292",
+  "released_on": "2026-10-06",
+  "channel": "stable",
+  "source": {
+    "repository": "https://github.com/anthropics/claude-code",
+    "tag": "v2.1.292",
+    "commit": "fbe20e00e2851fc01506f54f98a8f0b875af3847",
+    "build_commit": "37832d0b7cad7b40bac7c82dff58629313913edf",
+    "checked_at": "2026-10-16T11:20:37Z",
+    "note": "The public repository holds the release notes and plugins. Anthropic builds the binary from its own source at build_commit, from the release manifest; that source is not public. The pin is the unmodified official release binary."
+  },
+  "packages": [
+    {
+      "registry": "downloads.claude.ai",
+      "name": "claude",
+      "version": "2.1.292",
+      "manifest": "https://downloads.claude.ai/claude-code-releases/2.1.292/manifest.json",
+      "source_commit": "37832d0b7cad7b40bac7c82dff58629313913edf",
+      "sha256": {
+        "linux-arm64": "24caa9e6ff13bf227049a2626f1c816fc895023050f0ec3b12dbf14d897367e0",
+        "linux-x64": "a967e7b1d8b4e47ee421d5433027880347952b0c0857abf880e2c942a4ec93b3"
+      },
+      "installed_by": "Harbor's install with the job config's kwargs.version: the official bootstrap.sh downloads this version and checks the binary against the manifest checksum"
+    },
+    {
+      "registry": "npm",
+      "name": "@anthropic-ai/claude-code",
+      "version": "2.1.292",
+      "integrity": "sha512-ptT9UcOsyR2VLNgfHgF87To8B7tCrZktIpYC4dEGt+9MG42NAWsljEGBZ3spdHcJ2akednszESVNti7hWxZrJg==",
+      "installed_by": "Harbor's install on Alpine task images only"
+    }
+  ],
+  "unpinned": [
+    "Harbor fetches bootstrap.sh from downloads.claude.ai at install time; the script is not pinned, but the binary it installs is checked against the version's manifest."
+  ],
+  "harbor_agent": {
+    "kwargs": {
+      "version": "2.1.292"
+    },
+    "import_path": "observed_claude_code:ObservedClaudeCode"
+  },
+  "adapter": {
+    "file": "adapter/observed_claude_code.py",
+    "base": "harbor/agents/installed/claude_code.py at the pinned Harbor commit",
+    "scope": "Passive task resources and requested/resolved Harbor effort options; native execution and usage/cost conversion unchanged.",
+    "shared_owner": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
+    "qualification": "Local source tests only; fresh native Trial and remote retention qualification required.",
+    "source_files": {
+      "runs/2026-10-17-anonbench1-standalone-observations/standalone_observations.py": {
+        "bytes": 2371,
+        "sha256": "c6620a590f4d31d36a30b71d04a775cd4458095f0062bccc79348f7c6e9c9b29"
+      },
+      "runs/2026-10-17-anonbench1-standalone-observations/claude-code/adapter/observed_claude_code.py": {
+        "bytes": 359,
+        "sha256": "c0820bb3fa29c7e78418e2e724551c701680e6883859e791cbfeccdbd330417b"
+      },
+      "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py": {
+        "bytes": 17164,
+        "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+      }
+    }
+  }
+}

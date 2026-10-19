@@ -1,0 +1,206 @@
+{
+  "agent": "openclaw",
+  "release": "https://github.com/openclaw/openclaw/tree/f63d76311346250347426b4968d379b537b122a2",
+  "packages": [
+    {
+      "registry": "npm",
+      "name": "openclaw",
+      "version": "2026.10.4",
+      "installed_by": "prepare_runtime.py: exact custom bundled package and frozen npm lock from the external manifest"
+    },
+    {
+      "registry": "npm",
+      "name": "@openclaw/openclaw-atif",
+      "version": "0.1.4",
+      "installed_by": "prepare_runtime.py: admitted unmodified source build, complete package inventory and frozen npm ci lock",
+      "source_commit": "8104f23723de448ebe5a0c715a047b76391bbd3c"
+    }
+  ],
+  "runtime": {
+    "node": "24.19.0",
+    "nvm": "v0.40.2",
+    "node_linux_x64_archive_sha256": "14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647"
+  },
+  "harbor_agent": {
+    "import_path": "campaign_openclaw:Anonbench1OpenClaw",
+    "kwargs": {
+      "version": "2026.10.4"
+    }
+  },
+  "adapter": {
+    "file": "adapter/campaign_openclaw.py",
+    "base": "harbor/agents/installed/openclaw.py at the pinned Harbor commit",
+    "copied_from": "2026-10-13 runtime successor; source admission, provenance and current native pins updated in this unlaunched run"
+  },
+  "runtime_policy": {
+    "field": "openclaw_config.agents.defaults.models.<provider/model>.agentRuntime.id",
+    "openai": "codex",
+    "anthropic": "openclaw",
+    "open_weight": "openclaw",
+    "evidence": "Native Gateway session/capture records; requested effort alone is not provider acceptance."
+  },
+  "enforcement": "Existing digest-bound manifest and complete source inventory checked at setup/install and run; imported modules must belong to prepared source. Verified helper bytes are uploaded. Native context retains exact admitted identities.",
+  "native_candidate": {
+    "base_commit": "f63d76311346250347426b4968d379b537b122a2",
+    "candidate_commit": "f63d76311346250347426b4968d379b537b122a2",
+    "managed_codex_commit": "c1382380de69521303b416720a52f42d51af6248",
+    "managed_codex_version": "0.162.0",
+    "distribution": "custom-bundled-distribution",
+    "plugin": "dist/extensions/codex",
+    "shutdown_policy": {
+      "file": "gateway-shutdown-budget.mjs",
+      "bytes": 3314,
+      "sha256": "02757141fd71a0e03ee885d952edbcd664395a420b26c6b7ba596529336baa3a"
+    },
+    "candidate_tree": "e1b3b9ee2dd1a465412bf8ceb8b6f3dc6407e406",
+    "managed_codex_tree": "4899ef4940a8bc7fdf7873aa0d3f438085b8163f",
+    "fs_safe_version": "0.26.6",
+    "state_schema_version": 26,
+    "bundled_plugins": [
+      "codex",
+      "diagnostics-otel"
+    ]
+  },
+  "preparation": {
+    "file": "adapter/prepare_runtime.py",
+    "source_preparer_sha256": "24f1237750bf71386c1dcc5a71c5f3636179e028dbb749a709a8229fb0210613",
+    "python": "3.12.11",
+    "uv": "0.12.23",
+    "platform": "linux-x86_64",
+    "catalog_model": "required explicit external-manifest field; no model default",
+    "native_execution_qualified": false
+  },
+  "source_files": {
+    "campaign_pins.py": {
+      "bytes": 2603,
+      "sha256": "e06adbbbd8ee24df5db724204a4b046a84b8cd4069a4f1271061935f5649b113"
+    },
+    "openclaw/adapter/campaign_openclaw.py": {
+      "bytes": 87180,
+      "sha256": "9984f3f7cbf6a612587a568f3599518fab80b49506994b128b3523da68b0c4b9"
+    },
+    "openclaw/adapter/catalog-diagnostic/index.mjs": {
+      "bytes": 4327,
+      "sha256": "6a02383c5bdd940edd7dbc10aeb18a9e1e4348f83bfc8d1797d6336abd8b10ef"
+    },
+    "openclaw/adapter/catalog-diagnostic/openclaw.plugin.json": {
+      "bytes": 364,
+      "sha256": "1e379bbbc50f8d4bf8f9a4ebec5ef1a43357fdc9a192a4d3d5847632366f3446"
+    },
+    "openclaw/adapter/gateway_session.mjs": {
+      "bytes": 43753,
+      "sha256": "f1b6940faaa43e1f113451262a2219bd3df28ea2924234529390a32d1f9ed6f4"
+    },
+    "openclaw/adapter/harbor-sandbox/index.mjs": {
+      "bytes": 10851,
+      "sha256": "83fc2b45a80e180b255abd09b4384366377bc3ed83659770ff01fb5b6b031fc1"
+    },
+    "openclaw/adapter/harbor-sandbox/openclaw.plugin.json": {
+      "bytes": 477,
+      "sha256": "69cf3aef7adc2707bfd0b4a0e03f034f77155346f1fab2f3b5c07b81113cf96f"
+    },
+    "openclaw/adapter/offline_openclaw.py": {
+      "bytes": 30517,
+      "sha256": "2f33768e5d2a97072b9433148124804151d23e9e29c078c1b74087ea749b9935"
+    },
+    "openclaw/adapter/offline_process.py": {
+      "bytes": 43443,
+      "sha256": "4c5a53cebc55945a37bc86fde57cf25f4f2135b71fc4fc658e68d83c12c8fe22"
+    },
+    "openclaw/adapter/prepare_runtime.py": {
+      "bytes": 52824,
+      "sha256": "24f1237750bf71386c1dcc5a71c5f3636179e028dbb749a709a8229fb0210613"
+    },
+    "openclaw/adapter/qualify_openclaw.py": {
+      "bytes": 11103,
+      "sha256": "7bc1bc4b60255b457d0a028186a91799b81475ce582b205819b86be1dc8c6e97"
+    },
+    "openclaw/adapter/scored_effort.py": {
+      "bytes": 18599,
+      "sha256": "fb05497c255e4612894a56ffc76c5ea43d8263e173aae24af20606b7abc8a683"
+    }
+  },
+  "unpinned": [],
+  "final_eval_selection": {
+    "status": "build_verified_native_qualification_pending",
+    "policy": "one unmodified upstream main commit or release tag, resolved to a full commit SHA and tree",
+    "policy_owner": ".agents/skills/anonbench1-run/SKILL.md",
+    "selected_commit": "f63d76311346250347426b4968d379b537b122a2",
+    "selected_tree": "e1b3b9ee2dd1a465412bf8ceb8b6f3dc6407e406",
+    "selected_package_version": "2026.10.4",
+    "upstream_ref": "refs/heads/main",
+    "upstream_provenance_verified": true,
+    "verified_at": "2026-10-17T00:42:26Z",
+    "upstream_evidence": "https://api.github.com/repos/openclaw/openclaw/compare/f63d76311346250347426b4968d379b537b122a2...main",
+    "package_json_blob": "8b3107654fded6b9aea96ffa9e01e13c84a72316",
+    "reason": "Includes the landed native tool-outcome and trajectory repairs plus the missing Windows recovery-helper asset fix. Build the unchanged native dependency graph and qualify package, catalog, Trial, accounting and retention.",
+    "scope": "Unmodified native package and focused source tests passed. This adapter still needs fresh catalog, verifier-enabled Trial, accounting and retention qualification.",
+    "exporter_source_selection": {
+      "repository": "https://github.com/openclaw/openclaw-atif",
+      "commit": "8104f23723de448ebe5a0c715a047b76391bbd3c",
+      "tree": "c3c69add4d06f6b0c0f562a2104f8d8a3892cedc",
+      "package_version": "0.1.4",
+      "upstream_ref": "refs/heads/main",
+      "upstream_evidence": "https://api.github.com/repos/openclaw/openclaw-atif/compare/8104f23723de448ebe5a0c715a047b76391bbd3c...main",
+      "status": "source_build_verified_native_qualification_pending",
+      "registry_release_admitted": false,
+      "preparation_evidence": {
+        "status": "source_build_and_installed_cli_verified; native_trial_pending",
+        "verified_on": "2026-10-17",
+        "node": "24.19.0",
+        "npm": "11.19.0",
+        "source_tests_passed": 354,
+        "installed_package_members_verified": 136,
+        "package_sha256": "04440b8c8f77a085fe7d1e06fefbca3585c088a443891a79f581ad0a79ee2828",
+        "scope": "Unmodified source tests, native packed CLI smoke and frozen npm ci package admission; no model, task or retention qualification."
+      }
+    },
+    "native_build_inputs": {
+      "package_manager": "pnpm@12.11.1+sha512.5b0e3288239a7ea4155d2094f547066e122a1376b3cd785a680c9112e116913e64aaaecf20dd83cc34030fa67013f5c5511f9cf430dd8384188b4c60b8a2ad1e",
+      "bundled_plugins": [
+        "codex",
+        "diagnostics-otel"
+      ],
+      "managed_codex": {
+        "version": "0.162.0",
+        "upstream_ref": "refs/tags/rust-v0.162.0",
+        "source_commit": "c1382380de69521303b416720a52f42d51af6248",
+        "source_tree": "4899ef4940a8bc7fdf7873aa0d3f438085b8163f",
+        "linux_x64_dependency": "npm:@openai/codex@0.162.0-linux-x64",
+        "upstream_evidence": "https://api.github.com/repos/openai/codex/git/tags/1f3f93473394b620b35580859b7e6864f7a9f948"
+      },
+      "fs_safe_version": "0.26.6",
+      "status": "source_and_registry_metadata_verified",
+      "pnpm_lock_sha256": "6f16df29196b95b14323ebfa90841dc4d80675702c5a1910cbb9cbdfe4a5314f",
+      "pnpm_workspace_sha256": "98250ba31c41428dab9299263b661fc701b641c6f4ddf5a5b699791de4f0ad06"
+    },
+    "prior_harness_source_commit": "3edaea1b75b911c2089a440f2ca40254dc0ab618",
+    "harness_source_binding": "Freeze the exact repository commit and source member inventory containing this admission in the private launch packet.",
+    "superseded_source_failure": {
+      "commit": "aded33b0cef1a063fa68e6fb4e1fc4b099d04241",
+      "stage": "native_package_integrity",
+      "reason": "Two compiled recovery modules resolved a missing dist/windows-security-helper.exe after bundling fs-safe.",
+      "build_passed": true,
+      "source_tests_run": false,
+      "runtime_qualified": false,
+      "upstream_fix": "https://github.com/openclaw/openclaw/pull/174463"
+    },
+    "native_build_evidence": {
+      "status": "built_and_tested; native_trial_pending",
+      "verified_on": "2026-10-17",
+      "node": "24.19.0",
+      "pnpm": "12.11.1",
+      "source_tests_passed": 139,
+      "source_test_files": 7,
+      "package_bytes": 132666995,
+      "package_sha256": "a36fab6a737891054e5db24815ed2486c3b44b74454ecf77feece2dceb255b3c",
+      "build_receipt_sha256": "1b2f3a48da175f2bae47b010e6897a41193f9a19561ed8589d685d817e325c8d",
+      "scope": "Native two-plugin Docker package gate and focused trajectory, Codex catalog/event/managed-binary and diagnostics export tests; no model, task or retention qualification."
+    }
+  },
+  "shared_source": {
+    "path": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
+    "bytes": 17164,
+    "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+  }
+}

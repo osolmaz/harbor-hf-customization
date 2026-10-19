@@ -1,0 +1,79 @@
+{
+  "agent": "codex",
+  "release": "https://github.com/openai/codex/releases/tag/rust-v0.163.0",
+  "released_on": "2026-10-15",
+  "source": {
+    "repository": "https://github.com/openai/codex",
+    "tag": "rust-v0.163.0",
+    "tag_object": "129b8ec7ee6f4511557a4856279f529025c25af4",
+    "commit": "83086188ae0614bd882818ff1aa23f3194962012",
+    "tree": "e91f335e7a03e1d14fa1e5fc7fc7620cdfc60842",
+    "checked_at": "2026-10-16T11:20:37Z",
+    "note": "The tag is on Codex's release line, not on main; main and the tag share history up to the release branch point. The npm package is the unmodified official release build."
+  },
+  "packages": [
+    {
+      "registry": "npm",
+      "name": "@openai/codex",
+      "version": "0.163.0",
+      "integrity": "sha512-HNd7vR9oTK6M2ikxFnvNDCdYUgAsyo9VVnd5KnEd2ON0GYI++7MiX9XNPUkhtdgGKFPsWS+CEppQ1UU63uVhUw==",
+      "installed_by": "Harbor's install with the job config's kwargs.version"
+    },
+    {
+      "registry": "npm",
+      "name": "@openai/codex",
+      "version": "0.163.0-linux-arm64",
+      "integrity": "sha512-IH2/R+4OarjGvsAf1ll3fdyLwrPgYLl3uzp6u9CyD9sj2Lw+ViDSe3QBZVHdcHJs0eIiZFg6Wprcuy4CRZaUGw==",
+      "installed_by": "npm, as the optional dependency @openai/codex-linux-arm64"
+    },
+    {
+      "registry": "npm",
+      "name": "@openai/codex",
+      "version": "0.163.0-linux-x64",
+      "integrity": "sha512-uwRaOsrYogLQhcxAM/GoeWrw0QIWEMRo7c9gM8sKAviVkZQHlu9kRLJ5PkufbV+ABGjyZgIwiFdJ0LCJ0N6e8w==",
+      "installed_by": "npm, as the optional dependency @openai/codex-linux-x64"
+    }
+  ],
+  "runtime": {
+    "node_major": 22,
+    "nvm": "v0.40.2"
+  },
+  "unpinned": [
+    "Node is pinned to major 22 only: on glibc task images Harbor installs it with nvm v0.40.2, which takes the newest 22.x. On Alpine images Harbor uses the image's own npm and Node. The Codex binary itself comes from the pinned platform package."
+  ],
+  "harbor_agent": {
+    "kwargs": {
+      "version": "0.163.0"
+    },
+    "import_path": "observed_codex:ObservedCodex"
+  },
+  "adapter": {
+    "file": "adapter/observed_codex.py",
+    "base": "harbor/agents/installed/codex.py at the pinned Harbor commit",
+    "scope": "Passive task resources and configured effort; native CLI option admission for optional retained Codex capture before inherited execution. Native commands and usage/cost conversion unchanged.",
+    "shared_owner": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
+    "qualification": "Local CLI preflight and source tests only; fresh native Trial and remote retention qualification required.",
+    "source_files": {
+      "runs/2026-10-17-anonbench1-standalone-observations/standalone_observations.py": {
+        "bytes": 2371,
+        "sha256": "c6620a590f4d31d36a30b71d04a775cd4458095f0062bccc79348f7c6e9c9b29"
+      },
+      "runs/2026-10-17-anonbench1-standalone-observations/codex/adapter/observed_codex.py": {
+        "bytes": 1896,
+        "sha256": "2f79be3591343a3f5c10f9f661a3bcaedb548c25a5801fe9fff437d6b944cc18"
+      },
+      "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py": {
+        "bytes": 17164,
+        "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+      },
+      "runs/2026-10-17-anonbench1-standalone-observations/codex/adapter/retained_codex.py": {
+        "bytes": 9135,
+        "sha256": "c8989ded608326f36053b37eb52337d1c8b457252a336d904affe89c3975497e"
+      },
+      "runs/2026-10-17-anonbench1-standalone-observations/codex/adapter/retained_codex_probe.py": {
+        "bytes": 9446,
+        "sha256": "ba4e7800f02878c369613561afb1f808b12d4bc235fcc7b94846b0cb20cd1e87"
+      }
+    }
+  }
+}

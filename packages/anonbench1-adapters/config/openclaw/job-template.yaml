@@ -1,0 +1,26 @@
+# Preparation template only. Resolve the external runtime and private model bindings first.
+# One attempt is a proposed smoke, not authorization to run or score a task.
+job_name: anonbench1-openclaw-UNRESOLVED
+n_attempts: 1
+n_concurrent_trials: 1
+environment:
+  type: docker
+  force_build: false
+  delete: true
+agents:
+  - import_path: campaign_openclaw:Anonbench1OpenClaw
+    model_name: UNRESOLVED/UNRESOLVED
+    override_setup_timeout_sec: 1200
+    kwargs:
+      version: "2026.10.4"
+      code_mode: true
+      runtime: UNRESOLVED
+      model_api: UNRESOLVED
+    env:
+      ANONBENCH1_OPENCLAW_RUNTIME: ${ANONBENCH1_OPENCLAW_RUNTIME}
+      ANONBENCH1_OPENCLAW_RUNTIME_READY_SHA256: ${ANONBENCH1_OPENCLAW_RUNTIME_READY_SHA256}
+      OPENAI_API_KEY: ${PROVIDER_API_KEY}
+      OPENAI_BASE_URL: ${PROVIDER_BASE_URL}
+artifacts:
+  - source: /app
+    destination: workspace

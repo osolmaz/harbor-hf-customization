@@ -1,0 +1,37 @@
+{
+  "files": {
+    "claude-code/harbor.json": "c199a167e486f9e1ea755833323a9026ed0d4ed7253b25bc0dce029c3d339854",
+    "claude-code/job-template.yaml": "56523377f4f024fd49b9c7988b8ee92a6b9a9ebda6a31bc2d8f4dd7619177220",
+    "claude-code/pins.json": "9ec5ab649392eed7e4615c0b38821b3c8f166001f65a81959ab808c4fb523ed6",
+    "codex/harbor.json": "c199a167e486f9e1ea755833323a9026ed0d4ed7253b25bc0dce029c3d339854",
+    "codex/job-template.yaml": "32b7b97ea195fc177d134798d00d7733dad97b4a2f244b62e9a073b2adff95dd",
+    "codex/pins.json": "7c0346268bc865ba7d51115d95966aea0b030eb70616d17154359bdbb284ae05",
+    "hermes/harbor.json": "888c5b002386df58a90ef701f84f92d0486d77d7b36ef95bd79406243ce2d00f",
+    "hermes/job-template.yaml": "071e211d9fb6c8e04fdbb2e31d6d3b947643a4e99cf3589c5b4518083a26cf9b",
+    "hermes/pins.json": "2cc993bf1dee7f9bd089ca18a9492680d9e90d8f4c51a861b1c7ef54fcebc882",
+    "openclaw/harbor.json": "888c5b002386df58a90ef701f84f92d0486d77d7b36ef95bd79406243ce2d00f",
+    "openclaw/job-template.yaml": "15399a81f3455e4b547226bb040312c1291e35b75e6c6d03314a30ae26b94a2d",
+    "openclaw/pins.json": "4f15690cc8ca5cf2835bc1d2ac91df2d827f9c1f13c5b08ac35a2af9a865cd47",
+    "pi/harbor.json": "888c5b002386df58a90ef701f84f92d0486d77d7b36ef95bd79406243ce2d00f",
+    "pi/job-template.yaml": "2e14b02765af8f197dd6fc07aa89775415278978b07c03eb0bbbb9494645d796",
+    "pi/pins.json": "4ea5174cf3b2342ad595bc562de9c6dbc42d8044b36fb7fd5ef8c89590ff0b07"
+  },
+  "source_files": {
+    "claude-code/harbor.json": "d4c27f92224577d8c465c4a9f5260fcf33f44b10d6f45eddef4aaeb135598b37",
+    "claude-code/job-template.yaml": "85b531ebd0ae322239fff427881f309c9b069e01441876543113f5df96b8fd14",
+    "claude-code/pins.json": "627ee88c15eaea88bd39318fd2e783ffb646dd4b6de3c4117a663be9d186b6ef",
+    "codex/harbor.json": "d4c27f92224577d8c465c4a9f5260fcf33f44b10d6f45eddef4aaeb135598b37",
+    "codex/job-template.yaml": "24fa079d2520bebe89e2b7fa33199fb1e742b8d8ff54d802cf7a9dcc207ed675",
+    "codex/pins.json": "44aee42f85bf63fc349fe3e622e6246825ae8baae6be95c8b5bcb124d3bd98f0",
+    "hermes/harbor.json": "e4b749e2e1444f7473a20c0af9dea3aaa1ee899df7f76c55926abff72d8b77c1",
+    "hermes/job-template.yaml": "d9e88ffd7b023093e6c78c0c710f67961d73f24ebab13d6b0743d9bc259d3207",
+    "hermes/pins.json": "1289d903377b4a2accece6e0912aa06abf760f47cbd3e6b031be5c7362fbf203",
+    "openclaw/harbor.json": "e4b749e2e1444f7473a20c0af9dea3aaa1ee899df7f76c55926abff72d8b77c1",
+    "openclaw/job-template.yaml": "aee8361f4dee9287fb078a58688db8a467d9163ddb20e060ed3beac62e16829f",
+    "openclaw/pins.json": "a56b268d0095e698d09484dc80ef1f8e75a88c41e1923f7fb9634380e7e44f0c",
+    "pi/harbor.json": "e4b749e2e1444f7473a20c0af9dea3aaa1ee899df7f76c55926abff72d8b77c1",
+    "pi/job-template.yaml": "311cd41172c03b5e54d07e6d212f7971fb77f98e6092f08154506158b438872b",
+    "pi/pins.json": "80938685c49ba516c82e56fdc8ffc03c89209cbc7bd8ac320df856e2a1fc345e"
+  },
+  "source_revision": "d15fe9a942f292967e6272234850336b29e30f54"
+}

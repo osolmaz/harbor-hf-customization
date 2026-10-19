@@ -1,0 +1,34 @@
+# Render a private config, resolving every UNRESOLVED value before launch.
+# Preserve the admitted task, judge, model, effort and budget bindings.
+# Pass the private task export with -p and a fresh absolute jobs folder with -o.
+job_name: anonbench1-codex-UNRESOLVED-observed
+n_attempts: 1
+n_concurrent_trials: 1
+environment:
+  type: docker
+  # Preserve native task image/build settings; some tasks require a build.
+  force_build: false
+  delete: true
+agents:
+  - import_path: observed_codex:ObservedCodex
+    model_name: UNRESOLVED/UNRESOLVED
+    # Setup gets 40 minutes, as for the other harnesses.
+    override_setup_timeout_sec: 2400
+    kwargs:
+      version: "0.163.0"
+      # Required for frozen replay; render private absolute inputs from the capture packet.
+      retained_runtime:
+        archive_path: UNRESOLVED
+        manifest_path: UNRESOLVED
+        manifest_sha256: UNRESOLVED
+      config:
+        features:
+          code_mode: true
+      # Native model metadata and availability still determine effective tool mode.
+      # No reasoning_effort: the harness default for the model applies.
+    env:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+artifacts:
+  # Anonbench1 tasks work in /app. Keep the whole workspace with each trial.
+  - source: /app
+    destination: workspace
