@@ -9,7 +9,7 @@
     "offline_session.mjs": "d1dd6b2edd3c212356beb56e88768d718112abcc5b88aeb3af78284266f4998d",
     "offline_task_helper.mjs": "13288fd2188fc65f5f6b2902d9ec24faa77a1263e2cc4d7abaeb1a50e06ec5e2",
     "offline_tools.mjs": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93",
-    "resource_telemetry.py": "aa5134f2dc469a65e74f18e7fff643373a0cda92d3323b2a0eeb50956a7f45de",
+    "resource_telemetry.py": "b96f7a47dd231b211480d529e234e8de5fd72c76a1542e0e50d70de8037cf7a7",
     "retained_codex.py": "c79ad92ea1642c6129bdeeab1ea3123f3ca0e6c72f24ec138d25188f0e42cd97",
     "retained_codex_probe.py": "ba4e7800f02878c369613561afb1f808b12d4bc235fcc7b94846b0cb20cd1e87",
     "standalone_observations.py": "f8fa5e4f5508048ac62570991e122013d818a61fb2500691dcc2ea123742c964"

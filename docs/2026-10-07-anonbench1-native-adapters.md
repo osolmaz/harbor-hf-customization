@@ -7,7 +7,7 @@ tags: [harbor-hf, anonbench1, harness, attestation]
 
 # Anonbench1 native adapters on Harbor-HF
 
-Package `0.1.0rc6` selects Pi 1.3.0, Codex 0.163.0, and Claude Code 2.1.292.
+Package `0.1.0rc7` selects Pi 1.3.0, Codex 0.163.0, and Claude Code 2.1.292.
 OpenClaw is held until its selected runtime bundle passes admission. Hermes is
 excluded from this release. Neither held harness has an executable package export.
 
@@ -37,12 +37,19 @@ environment variables in memory. All four model slots use the selected explicit
 provider route. It calls HF's native Messages endpoint directly; no relay or
 service special case is needed.
 
+Codex and Claude Code can accept an explicit `price` quote in USD per million
+tokens. It supplies their existing LiteLLM cost calculation with the exact model
+and provider route. Conflicting quotes fail, and unrecognized returned model IDs
+are not assigned guessed aliases. `pricing.json` records the quote; calculated
+costs are estimates, not provider invoices. No inference call uses LiteLLM.
+
 ## Source and package checks
 
 `scripts/sync_anonbench1_adapters.py --source-root <configuration-checkout>` reads
 only the allowlisted files from one committed source revision. Its manifest
 records both original and published SHA-256 hashes. The only transformations
-are the published benchmark name and package-qualified Python imports.
+are the published benchmark name, package-qualified Python imports, and the
+comment separator required by the suppression checker. Runtime behavior is unchanged.
 
 Run `--check --source-root <configuration-checkout>` to compare with that exact
 revision. CI can run `--check` without the source checkout. Generated source is

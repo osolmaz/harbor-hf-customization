@@ -171,3 +171,42 @@ def test_claude_constructor_preserves_the_explicit_provider(tmp_path):
     )
     assert agent._resolved_model_name() == "example/model:provider"
     assert agent.extra_env["ANTHROPIC_BASE_URL"] == "https://router.huggingface.co"
+
+
+def test_quoted_prices_feed_native_cost_accounting(tmp_path, monkeypatch):
+    import litellm
+    from harbor.models.trajectories import Metrics, Step
+
+    monkeypatch.setattr(litellm, "model_cost", dict(litellm.model_cost))
+    quote = {"input": 1, "output": 2, "cache_read": 1, "cache_write": 1}
+    codex = make_agent(Anonbench1Codex, tmp_path / "codex", price=quote)
+    assert codex._compute_cost_from_pricing(1000, 300, 0, 0) == pytest.approx(0.0016)
+    claude = make_agent(Anonbench1ClaudeCode, tmp_path / "claude", price=quote)
+    step = Step(
+        step_id=1,
+        source="agent",
+        message="test",
+        model_name="example/model:provider",
+        metrics=Metrics(prompt_tokens=1000, completion_tokens=300),
+    )
+    assert claude._estimate_step_costs([step]) == pytest.approx(0.0016)
+    assert (tmp_path / "codex/pricing.json").is_file()
+    assert (tmp_path / "claude/pricing.json").is_file()
+
+
+def test_quoted_prices_reject_conflicts_and_implicit_providers(tmp_path, monkeypatch):
+    import litellm
+
+    from anonbench1_adapters.anonbench1_pi import ModelPrice
+    from anonbench1_adapters.pricing import register_quoted_price
+
+    monkeypatch.setattr(litellm, "model_cost", {})
+    price = ModelPrice(input=1, output=2, cache_read=1, cache_write=1)
+    with pytest.raises(ValueError, match="explicit model and provider"):
+        register_quoted_price("example/model", price, tmp_path)
+    register_quoted_price("example/model:provider", price, tmp_path)
+    register_quoted_price("example/model:provider", price, tmp_path)
+    with pytest.raises(ValueError, match="conflicts"):
+        register_quoted_price(
+            "example/model:provider", price.model_copy(update={"input": 2}), tmp_path
+        )

@@ -186,6 +186,7 @@ def transform(data: bytes) -> bytes:
         )
     for old, new in RENAMES:
         text = text.replace(old, new)
+    text = text.replace("# noqa: BLE001 - ", "# noqa: BLE001 -- ")
     return text.encode("utf-8")
 
 

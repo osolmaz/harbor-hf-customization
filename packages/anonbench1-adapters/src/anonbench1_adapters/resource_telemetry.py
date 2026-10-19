@@ -338,7 +338,7 @@ def _publish(agent, context):
                 metrics["extra"] = {**(metrics.get("extra") or {}), KEY: observation}
                 trajectory_path.write_text(json.dumps(trajectory, indent=2) + "\n")
         return True
-    except Exception:  # noqa: BLE001 - publication must preserve native success or failure.
+    except Exception:  # noqa: BLE001 -- publication must preserve native success or failure.
         observer.gaps.add("publication_failed")
 
 
@@ -370,7 +370,7 @@ def observe_resources(method):
             async def finish():
                 try:
                     await observer.stop()
-                except Exception:  # noqa: BLE001 - diagnostics never replace the native outcome.
+                except Exception:  # noqa: BLE001 -- diagnostics never replace the native outcome.
                     observer.gaps.add("observer_stop_failed")
                     observer.stopped = time.monotonic()
                 if not context.is_empty():
@@ -388,7 +388,7 @@ def observe_resources(method):
                                             source_path=source,
                                             target_path=str(self.environment_logs_dir / name),
                                         )
-                        except Exception:  # noqa: BLE001 - uploads never replace the native outcome.
+                        except Exception:  # noqa: BLE001 -- uploads never replace the native outcome.
                             observer.gaps.add("final_resource_upload_failed")
                             _publish(self, context)
 
