@@ -1,4 +1,6 @@
-"""Use the HF router's native Messages endpoint with Claude Code."""
+"""Preserve explicit HF routes in the native installed harnesses."""
+
+import shlex
 
 
 def claude_environment(env: dict[str, str], model_name: str) -> dict[str, str]:
@@ -26,3 +28,20 @@ def claude_environment(env: dict[str, str], model_name: str) -> dict[str, str]:
         CLAUDE_CODE_SUBAGENT_MODEL=model,
     )
     return translated
+
+
+_CODEX_PREFIX = "if [ -s ~/.nvm/nvm.sh ]; then . ~/.nvm/nvm.sh; fi; codex exec "
+
+
+def codex_command(command: str, model_name: str | None) -> str:
+    """Keep the HF namespace lost by the pinned native Codex command builder."""
+    if not command.startswith(_CODEX_PREFIX):
+        return command
+    if not model_name or ":" not in model_name or model_name.endswith(":"):
+        raise ValueError("Codex router execution requires an explicit provider")
+    flags, separator, instruction = command.partition(" -- ")
+    needle = f"--model {model_name.rsplit('/', 1)[-1]} "
+    if not separator or flags.count(needle) != 1:
+        raise ValueError("The pinned native Codex command shape changed")
+    model = shlex.quote(model_name.removeprefix("openai/"))
+    return flags.replace(needle, f"--model {model} ", 1) + separator + instruction

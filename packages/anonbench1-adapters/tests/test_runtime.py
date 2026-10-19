@@ -210,3 +210,58 @@ def test_quoted_prices_reject_conflicts_and_implicit_providers(tmp_path, monkeyp
         register_quoted_price(
             "example/model:provider", price.model_copy(update={"input": 2}), tmp_path
         )
+
+
+async def test_native_codex_command_keeps_the_full_hf_model_id(tmp_path, monkeypatch):
+    from harbor.models.agent.context import AgentContext
+
+    from anonbench1_adapters.observed_codex import ObservedCodex
+
+    peer = AsyncMock()
+    monkeypatch.setattr(ObservedCodex, "exec_as_agent", peer)
+    agent = Anonbench1Codex(
+        logs_dir=tmp_path,
+        model_name="openai/example/model:provider",
+        extra_env={
+            "OPENAI_BASE_URL": "https://router.huggingface.co/v1",
+            "OPENAI_API_KEY": "test-key",
+        },
+    )
+    env = offline_env()
+    env.default_user = None
+    await agent.run(
+        "Keep the literal --model model:provider in this instruction",
+        env,
+        AgentContext(),
+    )
+    command = next(
+        c.kwargs["command"]
+        for c in peer.call_args_list
+        if "codex exec " in c.kwargs.get("command", "")
+    )
+    flags, separator, instruction = command.partition(" -- ")
+    assert separator
+    assert "--model example/model:provider " in flags
+    assert "literal --model model:provider" in instruction
+
+
+@pytest.mark.parametrize("command", ["codex --version", "mkdir -p /tmp/example"])
+def test_codex_connection_leaves_other_native_commands_intact(command):
+    from anonbench1_adapters.hf_connection import codex_command
+
+    assert codex_command(command, None) == command
+
+
+@pytest.mark.parametrize(
+    ("suffix", "model", "message"),
+    [
+        ("--model model -- text", "example/model", "explicit provider"),
+        ("--json -- text", "example/model:provider", "command shape changed"),
+    ],
+)
+def test_codex_connection_rejects_changed_command_shapes(suffix, model, message):
+    from anonbench1_adapters.hf_connection import codex_command
+
+    prefix = "if [ -s ~/.nvm/nvm.sh ]; then . ~/.nvm/nvm.sh; fi; codex exec "
+    with pytest.raises(ValueError, match=message):
+        codex_command(prefix + suffix, model)

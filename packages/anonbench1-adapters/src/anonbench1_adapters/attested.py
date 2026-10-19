@@ -7,7 +7,7 @@ from harbor.environments.base import BaseEnvironment
 from anonbench1_adapters.anonbench1_pi import Anonbench1Pi as _CopiedPi
 from anonbench1_adapters.anonbench1_pins import require_version
 from anonbench1_adapters.attestation import attest_version
-from anonbench1_adapters.hf_connection import claude_environment
+from anonbench1_adapters.hf_connection import claude_environment, codex_command
 from anonbench1_adapters.observed_claude_code import ObservedClaudeCode
 from anonbench1_adapters.observed_codex import ObservedCodex
 from anonbench1_adapters.pricing import (
@@ -45,6 +45,21 @@ class Anonbench1Codex(ObservedCodex):
     async def setup(self, environment: BaseEnvironment) -> None:
         await super().setup(environment)
         await attest_version(self, environment, "codex")
+
+    @override
+    async def exec_as_agent(
+        self,
+        environment: BaseEnvironment,
+        command: str,
+        env: dict[str, str] | None = None,
+        cwd: str | None = None,
+        timeout_sec: int | None = None,
+    ) -> Any:  # noqa: ANN401 -- Preserve Harbor's native execution result type.
+        if self._get_env("OPENAI_BASE_URL") == "https://router.huggingface.co/v1":
+            command = codex_command(command, self.model_name)
+        return await super().exec_as_agent(
+            environment, command=command, env=env, cwd=cwd, timeout_sec=timeout_sec
+        )
 
 
 class Anonbench1ClaudeCode(ObservedClaudeCode):

@@ -7,7 +7,7 @@ tags: [harbor-hf, anonbench1, harness, attestation]
 
 # Anonbench1 native adapters on Harbor-HF
 
-Package `0.1.0rc7` selects Pi 1.3.0, Codex 0.163.0, and Claude Code 2.1.292.
+Package `0.1.0rc8` selects Pi 1.3.0, Codex 0.163.0, and Claude Code 2.1.292.
 OpenClaw is held until its selected runtime bundle passes admission. Hermes is
 excluded from this release. Neither held harness has an executable package export.
 
@@ -36,6 +36,11 @@ Claude Code maps the reviewed HF router connection into its native Anthropic
 environment variables in memory. All four model slots use the selected explicit
 provider route. It calls HF's native Messages endpoint directly; no relay or
 service special case is needed.
+
+The Codex wrapper preserves the full HF model ID in the native CLI command. The
+pinned Harbor command builder otherwise drops the namespace. A strict command
+shape check changes that argument only; the prompt, tools, session handling and
+API remain native.
 
 Codex and Claude Code can accept an explicit `price` quote in USD per million
 tokens. It supplies their existing LiteLLM cost calculation with the exact model

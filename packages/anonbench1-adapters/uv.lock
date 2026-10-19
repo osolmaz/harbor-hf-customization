@@ -907,7 +907,7 @@ dependencies = [
 
 [[package]]
 name = "harbor-anonbench1-adapters"
-version = "0.1.0rc7"
+version = "0.1.0rc8"
 source = { editable = "." }
 
 [package.dev-dependencies]
