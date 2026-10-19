@@ -2,7 +2,7 @@
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import campaignEvidence from './campaign_evidence.mjs';
+import campaignEvidence from './anonbench1_evidence.mjs';
 import { createHarborTaskTools, createHarborToolClient } from './offline_tools.mjs';
 
 export async function createOfflineSession(config, remote) {

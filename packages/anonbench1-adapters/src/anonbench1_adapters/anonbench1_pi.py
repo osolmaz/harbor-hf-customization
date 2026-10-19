@@ -251,7 +251,7 @@ class Anonbench1Pi(PinnedNodeRuntime, Pi):
             provider = _CUSTOM_PROVIDER
 
         await self._ensure_config_dir(environment)
-        evidence_file = Path(__file__).with_name("campaign_evidence.mjs")
+        evidence_file = Path(__file__).with_name("anonbench1_evidence.mjs")
         evidence_path = (_REMOTE_PI_CONFIG_DIR / evidence_file.name).as_posix()
         await self._upload_config_text(
             environment,

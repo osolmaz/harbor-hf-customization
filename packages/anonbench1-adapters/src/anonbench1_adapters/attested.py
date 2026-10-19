@@ -43,9 +43,11 @@ class Anonbench1ClaudeCode(ObservedClaudeCode):
 
     def __init__(self, *args: Any, version: str = "2.1.292", **kwargs: Any) -> None:  # noqa: ANN401 - Harbor constructor kwargs vary by adapter.
         require_version(version, "2.1.292")
-        kwargs["extra_env"] = claude_environment(
-            kwargs.get("extra_env") or {}, kwargs.get("model_name") or ""
-        )
+        source_env = kwargs.get("extra_env") or {}
+        model_name = kwargs.get("model_name") or ""
+        kwargs["extra_env"] = claude_environment(source_env, model_name)
+        if source_env.get("OPENAI_BASE_URL") == "https://router.huggingface.co/v1":
+            kwargs["model_name"] = model_name.removeprefix("openai/")
         super().__init__(*args, version=version, **kwargs)
 
     @override

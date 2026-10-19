@@ -27,7 +27,7 @@ COPIED_FILES = (
     ("runs/2026-10-16-shellbench-pi-runtime/campaign_pins.py", "anonbench1_pins.py"),
     (
         "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/campaign_evidence.mjs",
-        "campaign_evidence.mjs",
+        "anonbench1_evidence.mjs",
     ),
     ("runs/2026-10-16-shellbench-pi-runtime/pi/adapter/offline_pi.py", "offline_pi.py"),
     (
@@ -80,6 +80,7 @@ RENAMES = (
     ("ShellBench's", "Anonbench1's"),
     ("ShellBench", "Anonbench1"),
     ("shellbench", "anonbench1"),
+    ("campaign_evidence.mjs", "anonbench1_evidence.mjs"),
 )
 
 # These are native Harbor configuration files, not benchmark task data. The

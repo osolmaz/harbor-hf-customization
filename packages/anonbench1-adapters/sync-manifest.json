@@ -1,12 +1,12 @@
 {
   "files": {
-    "anonbench1_pi.py": "9cd9775e628687ba735a4bbdc29e8840af729f506b82e7184cb26310e48a2f94",
+    "anonbench1_evidence.mjs": "3f644c06a3bb11483eb35dcadd9a0c182827d0c04c22b80f789104268785973a",
+    "anonbench1_pi.py": "e2e9bb0f37d29c2cb043ad1eecb3f9e5e6a9e42cbdb1ac8bdd5bccac2ca596c6",
     "anonbench1_pins.py": "e90f5de576e9e61711dd98bb071803458504827e1987db53e45c2f587720331e",
-    "campaign_evidence.mjs": "3f644c06a3bb11483eb35dcadd9a0c182827d0c04c22b80f789104268785973a",
     "observed_claude_code.py": "1121c96c8fbc2ad93ec1fe7d28a4937d3e861d83a90228c3515140ef7baa79f6",
     "observed_codex.py": "18bf50e8d7a9a0753217506efe72000a93852e2501e897dda161b9382296af9d",
     "offline_pi.py": "b97c958b05dad06811c53408b19289ddc9e3c8077d289b6f3cb9e8dcd18df5d5",
-    "offline_session.mjs": "4fb6baee8a03e4936022732489f85ffd95ce6c5bc2d60f1736ed81fb1f07c453",
+    "offline_session.mjs": "d1dd6b2edd3c212356beb56e88768d718112abcc5b88aeb3af78284266f4998d",
     "offline_task_helper.mjs": "13288fd2188fc65f5f6b2902d9ec24faa77a1263e2cc4d7abaeb1a50e06ec5e2",
     "offline_tools.mjs": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93",
     "resource_telemetry.py": "aa5134f2dc469a65e74f18e7fff643373a0cda92d3323b2a0eeb50956a7f45de",
@@ -15,9 +15,9 @@
     "standalone_observations.py": "f8fa5e4f5508048ac62570991e122013d818a61fb2500691dcc2ea123742c964"
   },
   "source_files": {
+    "anonbench1_evidence.mjs": "d74b586968808ca6a766ae97b9766b1d53ae1f0a9dbec7d49a3cb457521015a4",
     "anonbench1_pi.py": "f32bbee06487eb79a5bfdfaef8ffc1edbdc58801842f1d2e21b1c5e7aaa1d936",
     "anonbench1_pins.py": "7c377888f5ee61fc3c6ff89e842cc43e29f2cd0b7904c0ba79e2d862663f0baa",
-    "campaign_evidence.mjs": "d74b586968808ca6a766ae97b9766b1d53ae1f0a9dbec7d49a3cb457521015a4",
     "observed_claude_code.py": "c0820bb3fa29c7e78418e2e724551c701680e6883859e791cbfeccdbd330417b",
     "observed_codex.py": "2f79be3591343a3f5c10f9f661a3bcaedb548c25a5801fe9fff437d6b944cc18",
     "offline_pi.py": "f3970486ae087ef13946a6722f70978f079c230466acd0a3ddc67b567f7a23ee",
