@@ -1,0 +1,18 @@
+{
+  "repo_url": "https://github.com/osolmaz/harbor.git",
+  "commit": "11a0fe2d3305e144a5e8af625d50a7394f293f75",
+  "tag": "anonbench1-harbor-2026-10-05",
+  "pull_request": "https://github.com/harbor-framework/harbor/pull/2327",
+  "pull_request_branch": "fix/openclaw-remote-config",
+  "base_release": "v0.24.0",
+  "package": {
+    "name": "harbor",
+    "version": "0.24.0"
+  },
+  "install": "uv tool install --with 'litellm==1.104.1' 'harbor @ git+https://github.com/osolmaz/harbor.git@11a0fe2d3305e144a5e8af625d50a7394f293f75'",
+  "pinned_on": "2026-10-08",
+  "runtime_dependencies": {
+    "litellm": "1.104.1",
+    "role": "Harbor dependency only; no deployment or inference proxy"
+  }
+}

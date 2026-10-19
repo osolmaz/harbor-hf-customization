@@ -1,0 +1,23 @@
+# Preparation template only. Resolve the manifest gates and create a reviewed jobs/ config.
+# One attempt is a proposed smoke, not authorization to run or score a task.
+job_name: anonbench1-pi-UNRESOLVED
+n_attempts: 1
+n_concurrent_trials: 1
+environment:
+  type: docker
+  force_build: false
+  delete: true
+agents:
+  - import_path: campaign_pi:Anonbench1Pi
+    model_name: UNRESOLVED/UNRESOLVED
+    override_setup_timeout_sec: 2400
+    kwargs:
+      version: "1.3.0"
+      code_mode: true
+      model_api: UNRESOLVED
+    env:
+      OPENAI_API_KEY: ${PROVIDER_API_KEY}
+      OPENAI_BASE_URL: ${PROVIDER_BASE_URL}
+artifacts:
+  - source: /app
+    destination: workspace

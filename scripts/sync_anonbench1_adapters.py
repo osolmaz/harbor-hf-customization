@@ -19,6 +19,7 @@ Usage:
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -54,6 +55,91 @@ RENAMES = (
     ("shellbench", "anonbench1"),
     ("campaign_evidence.mjs", "anonbench1_evidence.mjs"),
 )
+
+# These are native Harbor configuration files, not benchmark task data. The
+# current source selects a separate dated runtime for each harness.
+SETTINGS_DIR = REPO_ROOT / PACKAGE / "config"
+SETTINGS_MANIFEST = SETTINGS_DIR / "sync-manifest.json"
+RUNTIME_RUNS = {
+    "pi": "2026-10-16-shellbench-pi-runtime",
+    "openclaw": "2026-10-15-shellbench-openclaw-runtime",
+    "hermes": "2026-10-13-shellbench-hermes-runtime",
+    "codex": "2026-10-17-shellbench-standalone-observations",
+    "claude-code": "2026-10-17-shellbench-standalone-observations",
+}
+SETTINGS_FILES = {
+    **{
+        f"{agent}/harbor.json": f"runs/{run}/harbor.json"
+        for agent, run in RUNTIME_RUNS.items()
+    },
+    **{
+        f"{agent}/{name}": f"runs/{run}/{agent}/{name}"
+        for agent, run in RUNTIME_RUNS.items()
+        for name in ("pins.json", "job-template.yaml")
+    },
+}
+
+
+def settings_bytes(data: bytes) -> bytes:
+    """Keep source settings intact apart from the published benchmark name."""
+    text = data.decode("utf-8").replace("SHELLBENCH", "ANONBENCH1")
+    for old, new in RENAMES:
+        text = text.replace(old, new)
+    return text.encode("utf-8")
+
+
+def committed_settings(source_root: Path, revision: str) -> dict[str, bytes]:
+    """Read only the allowlisted config files from one committed revision."""
+    files = {}
+    for target, source in SETTINGS_FILES.items():
+        files[target] = subprocess.run(
+            ["git", "-C", str(source_root), "show", f"{revision}:{source}"],
+            capture_output=True,
+            check=True,
+        ).stdout
+    return files
+
+
+def sync_settings(source_root: Path) -> None:
+    """Save the native templates and both their source and published hashes."""
+    revision = source_revision(source_root)
+    originals = committed_settings(source_root, revision)
+    files = {name: settings_bytes(data) for name, data in originals.items()}
+    for name, data in files.items():
+        target = SETTINGS_DIR / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    manifest = {
+        "source_revision": revision,
+        "source_files": {name: digest(data) for name, data in originals.items()},
+        "files": {name: digest(data) for name, data in files.items()},
+    }
+    SETTINGS_MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+
+
+def check_settings(source_root: Path | None = None) -> list[str]:
+    """Check every copied setting, optionally against the recorded source too."""
+    manifest = json.loads(SETTINGS_MANIFEST.read_text())
+    if not re.fullmatch(r"[0-9a-f]{40}", manifest["source_revision"]):
+        return ["configuration source revision must be a full commit"]
+    recorded = manifest["files"]
+    drifted = []
+    if set(recorded) != set(SETTINGS_FILES) or set(manifest["source_files"]) != set(
+        SETTINGS_FILES
+    ):
+        drifted.append("configuration inventory differs from the selected source files")
+    for name in SETTINGS_FILES:
+        target = SETTINGS_DIR / name
+        if not target.is_file() or digest(target.read_bytes()) != recorded.get(name):
+            drifted.append(f"{name} does not match the configuration sync manifest")
+    if source_root is not None:
+        originals = committed_settings(source_root, manifest["source_revision"])
+        for name, data in originals.items():
+            if digest(data) != manifest["source_files"].get(name) or digest(
+                settings_bytes(data)
+            ) != recorded.get(name):
+                drifted.append(f"{name} differs from the recorded source revision")
+    return drifted
 
 
 def transform(data: bytes) -> bytes:
@@ -126,35 +212,21 @@ def check(pairs: list[tuple[Path | None, Path]]) -> list[str]:
     return drifted
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source-root",
-        type=Path,
-        help="The reviewed adapter source folder; required for sync, not for --check.",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="Verify the committed files against sync-manifest.json; never writes.",
-    )
-    args = parser.parse_args()
+def settings_command(args: argparse.Namespace) -> int:
+    if args.check:
+        drifted = check_settings(args.source_root)
+        for line in drifted:
+            print(f"drift: {line}", file=sys.stderr)
+        return int(bool(drifted))
+    sync_settings(args.source_root)
+    print("runtime settings in sync; worker qualification remains required")
+    return 0
 
-    if not args.check and not args.source_root:
-        parser.error("--source-root is required for sync")
+
+def adapter_command(args: argparse.Namespace) -> int:
     pairs: list[tuple[Path | None, Path]] = [
         (args.source_root / relative if args.source_root else None, TARGET_DIR / target)
-        for relative, target in (
-            ("pi/adapter/campaign_pi.py", "anonbench1_pi.py"),
-            ("openclaw/adapter/campaign_openclaw.py", "anonbench1_openclaw.py"),
-            ("hermes/adapter/campaign_hermes.py", "anonbench1_hermes.py"),
-            ("campaign_pins.py", "anonbench1_pins.py"),
-            ("pi/adapter/campaign_evidence.mjs", "anonbench1_evidence.mjs"),
-            ("pi/adapter/offline_pi.py", "anonbench1_offline_pi.py"),
-            ("pi/adapter/offline_session.mjs", "anonbench1_offline_session.mjs"),
-            ("pi/adapter/offline_task_helper.mjs", "anonbench1_offline_task_helper.mjs"),
-            ("pi/adapter/offline_tools.mjs", "anonbench1_offline_tools.mjs"),
-        )
+        for relative, target in COPIED_FILES
     ]
 
     if args.check:
@@ -179,6 +251,29 @@ def main() -> int:
         print(line)
     print("in sync")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help="The reviewed source; required for sync, optional for --check.",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Verify committed files against the sync manifest; never writes.",
+    )
+    parser.add_argument(
+        "--settings",
+        action="store_true",
+        help="Sync runtime settings; --source-root is the configuration checkout.",
+    )
+    args = parser.parse_args()
+    if not args.check and not args.source_root:
+        parser.error("--source-root is required for sync")
+    return settings_command(args) if args.settings else adapter_command(args)
 
 
 if __name__ == "__main__":

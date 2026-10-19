@@ -206,6 +206,13 @@ project, its lock, and the adapter source, next to the Harbor job config for
 that harness. The folder shows exactly what ran without an older checkout.
 See [the run record spec](docs/2026-10-05-benchmark-run-records-spec.md).
 
+## Anonbench1 runtime settings
+
+The [staged Anonbench1 runtime settings](packages/anonbench1-adapters/config/README.md)
+record the merged configuration source for five harnesses. Their required Harbor
+revision differs from the current Harbor-HF worker. The integration notes list
+the worker and adapter changes required before those settings can be used.
+
 ## Benchmark base images
 
 `docker/base-images/` holds shared base images for benchmark tasks, built for `linux/amd64` and

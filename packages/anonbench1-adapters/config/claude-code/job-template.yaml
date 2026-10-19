@@ -1,0 +1,26 @@
+# Render a private config, resolving every UNRESOLVED value before launch.
+# Preserve the admitted task, judge, model, effort and budget bindings.
+# Pass the private task export with -p and a fresh absolute jobs folder with -o.
+job_name: anonbench1-claude-code-UNRESOLVED-observed
+n_attempts: 1
+n_concurrent_trials: 1
+environment:
+  type: docker
+  # Preserve native task image/build settings; some tasks require a build.
+  force_build: false
+  delete: true
+agents:
+  - import_path: observed_claude_code:ObservedClaudeCode
+    model_name: UNRESOLVED/UNRESOLVED
+    # Setup gets 40 minutes, as for the other harnesses.
+    override_setup_timeout_sec: 2400
+    kwargs:
+      version: "2.1.292"
+      # No native Claude Code code-mode setting is established; none is requested here.
+      # Omitted effort permits native defaults and Harbor's supported environment fallback.
+    env:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+artifacts:
+  # Anonbench1 tasks work in /app. Keep the whole workspace with each trial.
+  - source: /app
+    destination: workspace

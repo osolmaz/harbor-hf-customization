@@ -33,6 +33,7 @@ jobs:
       - run: uv run --project runtimes/openclaw-native pytest runtimes/openclaw-native/tests
       - run: uv run --project runtimes/openclaw-native pip-audit
       - run: uv run --project packages/anonbench1-adapters python scripts/sync_anonbench1_adapters.py --check
+      - run: uv run python scripts/sync_anonbench1_adapters.py --settings --check
       - run: uv lock --check --project packages/anonbench1-adapters
       - run: uv run --project packages/anonbench1-adapters ruff check packages/anonbench1-adapters
       - run: uv run --project packages/anonbench1-adapters ruff format --check packages/anonbench1-adapters

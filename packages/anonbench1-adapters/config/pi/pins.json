@@ -1,0 +1,113 @@
+{
+  "agent": "pi",
+  "release": "https://github.com/earendil-works/pi/releases/tag/v1.3.0",
+  "released_on": "2026-10-15",
+  "packages": [
+    {
+      "registry": "npm",
+      "name": "@earendil-works/pi-coding-agent",
+      "version": "1.3.0",
+      "integrity": "sha512-V/WoCjA2hQSe3QLWIUB24cTRdtEdeLiIzkDqU5RMXV6VWuD+KGZnzVBMhglwdnQTySkehZsjt8a3g6Jd2g4nnw==",
+      "installed_by": "the job config's kwargs.version"
+    }
+  ],
+  "runtime": {
+    "node": "26.11.1",
+    "nvm": "v0.40.2"
+  },
+  "unpinned": [
+    "npm resolves the transitive dependencies at install time; the package ships no shrinkwrap."
+  ],
+  "limits": [
+    "Built-in MCP supports stdio and streamable HTTP; legacy SSE remains unsupported. The six required Compose/computer-MCP task cells are unqualified until task transport, tool execution and runtime proof. No permanent exclusion or 135-task coverage claim.",
+    "Published 1.3.0 identity checked 2026-10-16. Source/SDK tests are not a live campaign task or complete accounting qualification."
+  ],
+  "harbor_agent": {
+    "import_path": "campaign_pi:Anonbench1Pi",
+    "kwargs": {
+      "version": "1.3.0"
+    }
+  },
+  "adapter": {
+    "file": "adapter/campaign_pi.py",
+    "base": "harbor/agents/installed/pi.py at the pinned Harbor commit",
+    "copied_from": "2026-10-08 campaign adapter; all online/offline runtime guards updated in this unlaunched successor"
+  },
+  "enforcement": "Exact requested version before install; Node and installed package version after install and before runtime commands.",
+  "builtin_mcp_contract": {
+    "evidence_status": "Official 1.3.0 source boundary reviewed; required task runtime proof remains pending.",
+    "package_source": "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.3.0.tgz",
+    "config_path": "${PI_CODING_AGENT_DIR}/mcp.json",
+    "config_shape": {
+      "mcpServers": "Object keyed by server name; stdio command/args or streamable HTTP url.",
+      "exposure": "direct exposes required MCP tools to the model; code mode can also call them.",
+      "enabled": true
+    },
+    "supported_transports": [
+      "stdio",
+      "streamable-http"
+    ],
+    "unsupported_transports": [
+      "sse"
+    ],
+    "activation": "Built-in MCP loads by default; --extension builtin:mcp explicitly selects it. Do not load pi-mcp-adapter or pass --no-mcp.",
+    "preflight": "pi mcp list --json connects, lists tools/errors, closes connections and returns nonzero for enabled-server/config failure. It performs no LLM call.",
+    "tool_filter": "--tools read,bash,edit,write,codemode preserves MCP tools unless a filter explicitly includes mcp__ patterns.",
+    "source_reference": "https://github.com/earendil-works/pi/tree/71023aec1546d6d677a65669c5665c0927ce0dd0/packages"
+  },
+  "evidence_contract": {
+    "extension": "adapter/anonbench1_evidence.mjs",
+    "hook": "provider_stream_event; event.data is read-only parsed provider data before normalization, not original wire bytes. Outer event.model/provider/api describe the request.",
+    "persisted": "Bounded model and numeric usage observations in existing session custom entries; no payload text or headers.",
+    "qualification": "Partial capture never asserts complete call accounting. Explicit model mismatch fails research qualification. Requested-only identity and SDK-only aggregate zeros remain unknown.",
+    "source_reference": "https://github.com/earendil-works/pi/tree/71023aec1546d6d677a65669c5665c0927ce0dd0/packages"
+  },
+  "source_commit": "71023aec1546d6d677a65669c5665c0927ce0dd0",
+  "source_files": {
+    "campaign_pins.py": {
+      "bytes": 2603,
+      "sha256": "7c377888f5ee61fc3c6ff89e842cc43e29f2cd0b7904c0ba79e2d862663f0baa"
+    },
+    "pi/adapter/anonbench1_evidence.mjs": {
+      "bytes": 4144,
+      "sha256": "d74b586968808ca6a766ae97b9766b1d53ae1f0a9dbec7d49a3cb457521015a4"
+    },
+    "pi/adapter/campaign_pi.py": {
+      "bytes": 40385,
+      "sha256": "f32bbee06487eb79a5bfdfaef8ffc1edbdc58801842f1d2e21b1c5e7aaa1d936"
+    },
+    "pi/adapter/offline_pi.py": {
+      "bytes": 12859,
+      "sha256": "f3970486ae087ef13946a6722f70978f079c230466acd0a3ddc67b567f7a23ee"
+    },
+    "pi/adapter/offline_session.mjs": {
+      "bytes": 5512,
+      "sha256": "4fb6baee8a03e4936022732489f85ffd95ce6c5bc2d60f1736ed81fb1f07c453"
+    },
+    "pi/adapter/offline_task_helper.mjs": {
+      "bytes": 4874,
+      "sha256": "13288fd2188fc65f5f6b2902d9ec24faa77a1263e2cc4d7abaeb1a50e06ec5e2"
+    },
+    "pi/adapter/offline_tools.mjs": {
+      "bytes": 3529,
+      "sha256": "465d16aff29c1b9d36a4645a5d2efc5be308c20e602ceef561e83c512c6dcc93"
+    }
+  },
+  "final_eval_selection": {
+    "status": "awaiting_native_qualification",
+    "policy_owner": ".agents/skills/anonbench1-run/SKILL.md",
+    "selected_commit": "71023aec1546d6d677a65669c5665c0927ce0dd0",
+    "selected_tree": "25e0557c8b13f98848bebd48fe7922908f66fe4a",
+    "upstream_ref": "refs/tags/v1.3.0",
+    "upstream_provenance_verified": true,
+    "verified_at": "2026-10-16T08:32:03Z",
+    "upstream_evidence": "https://api.github.com/repos/earendil-works/pi/git/ref/tags/v1.3.0",
+    "reason": "The official tag resolves to the pinned package source. Runtime/feature smokes and verified retention remain required.",
+    "scope": "Operator selection status; source provenance does not establish runtime or campaign qualification."
+  },
+  "shared_source": {
+    "path": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
+    "bytes": 17164,
+    "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+  }
+}

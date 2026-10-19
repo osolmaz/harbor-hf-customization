@@ -1,0 +1,123 @@
+{
+  "agent": "hermes",
+  "release": "https://github.com/NousResearch/hermes-agent/releases/tag/v2026.9.24",
+  "release_name": "Hermes Agent v0.21.5",
+  "released_on": "2026-09-24",
+  "source": {
+    "repo_url": "https://github.com/NousResearch/hermes-agent.git",
+    "tag": "v2026.9.24",
+    "commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "uv_lock_blob": "852ac06d0e91c52da50448d9e7bf0251df00b704",
+    "installed_by": "SHA-addressed installer with --commit and an exact post-install HEAD check"
+  },
+  "installer": {
+    "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/f97608f178d1ffeca59860195ab7da295f7c8e5f/scripts/install.sh",
+    "downloaded_by": "adapter/campaign_hermes.py"
+  },
+  "unpinned": [
+    "The installer installs Playwright and Chromium at install time."
+  ],
+  "harbor_agent": {
+    "import_path": "campaign_hermes:Anonbench1Hermes",
+    "kwargs": {
+      "version": "v2026.9.24"
+    }
+  },
+  "adapter": {
+    "file": "adapter/campaign_hermes.py",
+    "base": "harbor/agents/installed/hermes.py at the pinned Harbor commit",
+    "copied_from": "2026-10-08 campaign accounting adapter with the ownership-safe successor observer; unlaunched complete adapter"
+  },
+  "runtime": {
+    "node": "26.11.1",
+    "nvm": "v0.40.2"
+  },
+  "enforcement": "Exact tag argument; SHA-addressed installer; HEAD and package version checked after install and before run. Exact Node selected for install and runtime.",
+  "source_files": {
+    "hermes/adapter/campaign_hermes.py": {
+      "bytes": 41237,
+      "sha256": "c0e8a871efe7431010c0f43aa271f2e0b5fec3ad099d59bff805cdc6d44733d5"
+    },
+    "hermes/adapter/hermes_harbor/__init__.py": {
+      "bytes": 295,
+      "sha256": "9c44f3125904a2d39b0d91780960d5bd385884aa138bbee3357a6bc18ac0a8a4"
+    },
+    "hermes/adapter/hermes_harbor/plugin.yaml": {
+      "bytes": 107,
+      "sha256": "c8bc58e241d744c73be1a3f64916e1e1e4c815d8a546ec30654e3aaf3e0ff584"
+    },
+    "hermes/adapter/hermes_harbor/reasoning.py": {
+      "bytes": 18919,
+      "sha256": "cb466ff7e06de3e030c2a8aa444255c0421fec2115a53ea703cf75dc4cb116a0"
+    },
+    "hermes/adapter/hermes_source.py": {
+      "bytes": 12432,
+      "sha256": "24382ecaffdd5ec98f981edfcc636da14e5962f1b404deeeea4a01c3160ab986"
+    },
+    "hermes/adapter/offline_hermes_host.py": {
+      "bytes": 13918,
+      "sha256": "1833d0149345fd7932c5ea558c89aa2149d63956a33dcb51d64322779cb6b6c1"
+    },
+    "hermes/adapter/offline_hermes_native.py": {
+      "bytes": 40046,
+      "sha256": "f78364e540a49ce3bee93c4e4f0c60c3bdf07ee77d25108f01e4b8753f64aae3"
+    },
+    "hermes/adapter/offline_hermes_state.py": {
+      "bytes": 13818,
+      "sha256": "36d24ea9883629f703c76755d4186f5b049779f75ca2c96dff8da75b18257982"
+    },
+    "hermes/adapter/offline_hermes_task.py": {
+      "bytes": 16583,
+      "sha256": "48bc5a2f8d9b23adea79bc1f2f0a533c28b172226adc90ebd52f66cde0dbe1e7"
+    },
+    "hermes/adapter/offline_hermes_transport.py": {
+      "bytes": 26983,
+      "sha256": "db059d1ebe08dab63eb391ffaf6b149fa4e58537f5ee5b9ac09b481851663d99"
+    },
+    "hermes/adapter/offline_hermes_web.py": {
+      "bytes": 14038,
+      "sha256": "db53bee9ec682895e01a95e50a4c919dc05cc6f9379590bd9988c11b963a8f40"
+    },
+    "hermes/adapter/qualify_hermes.py": {
+      "bytes": 6269,
+      "sha256": "672d6b6fe6c536405a594aaa3dc643e3dd56b785231432c62c3c5113eb313ef8"
+    },
+    "campaign_pins.py": {
+      "bytes": 2603,
+      "sha256": "7c377888f5ee61fc3c6ff89e842cc43e29f2cd0b7904c0ba79e2d862663f0baa"
+    }
+  },
+  "shared_source": {
+    "path": "runs/2026-10-17-anonbench1-resource-observations/resource_telemetry.py",
+    "bytes": 17164,
+    "sha256": "79744cb29d7e8beeb59ca0736c37940007e86c05e1e16156f762df42a548f91b"
+  },
+  "final_eval_selection": {
+    "status": "blocked_pending_offline_qualification",
+    "policy": "one unmodified upstream main commit or release tag, resolved to a full commit SHA and tree",
+    "policy_owner": ".agents/skills/anonbench1-run/SKILL.md",
+    "selected_commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "upstream_provenance_verified": true,
+    "reason": "The consumer now admits only the selected unchanged upstream archive, full tree and native lock. Dependency preparation and limited native hook observations passed. Scored offline Trial admission remains blocked pending live filesystem-view, HTTP-media and 50 MiB transport qualification; explicit non-scoring qualification remains available.",
+    "scope": "Operator selection and source-consumer status; retained native preparation records are evidence, not final-run runtime admission.",
+    "upstream_ref": "refs/tags/v2026.9.24",
+    "upstream_tag_object": "e3dd27ee2d8b011737a4eea8e3eb3d711ab78690",
+    "source_tree": "5849eacde63aaea608ca418821cc84771fce3bec",
+    "upstream_verified_on": "2026-10-16",
+    "upstream_evidence": "https://api.github.com/repos/NousResearch/hermes-agent/git/tags/e3dd27ee2d8b011737a4eea8e3eb3d711ab78690",
+    "native_preparation": {
+      "python": "3.12.11",
+      "uv": "0.12.23",
+      "source_archive_sha256": "38d01fd8bdb1eb8a3866afa613c1b1631d2ca18f9c050436c07c4c51bd1d6c9d",
+      "uv_lock_sha256": "5b3798f326209475abca8ef7cbf7c9406f12e687c28c0b540dfe597466f48590",
+      "install_mode": "uv sync --frozen --no-dev --no-install-project",
+      "status": "dependencies_prepared; limited_native_hooks_passed; registered_adapter_and_Trial_not_qualified",
+      "hook_verified_on": "2026-10-17",
+      "hook_probe_sha256": "5ae5de3c3c4e5d4eb2f9a4810f8de83f89e140b4ccbda30705d3301b6b5cd770",
+      "hook_observations_passed": 13,
+      "hook_observation_scope": "Synthetic native hooks only; includes confirmation of controller-owned context. No registered Harbor adapter, full delegation, HTTP media, inference, accounting or retention qualification.",
+      "hook_receipt_sha256": "ca73c61bcd10004ce7ec47039935af81f507731000f48bfb535f5f1ff753a449",
+      "hook_archive_sha256": "1102a5add54a40cd7bd1fbd49f839efbcdc472be255b7bd0e668868ad0a5d10f"
+    }
+  }
+}
