@@ -161,10 +161,9 @@ jobs:
           printf '{"private":true,"dependencies":{"openclaw":"file:%s"}}\n' "$core_pack" > package.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --omit=dev --ignore-scripts --no-audit --no-fund
-          export HOME="$RUNNER_TEMP/openclaw-keyless-home"
-          export OPENCLAW_STATE_DIR="$HOME/state"
-          export OPENCLAW_CONFIG_PATH="$HOME/config.json"
-          export CODEX_HOME="$HOME/codex"
+          export OPENCLAW_STATE_DIR="$RUNNER_TEMP/openclaw-keyless-home/state"
+          export OPENCLAW_CONFIG_PATH="$RUNNER_TEMP/openclaw-keyless-home/config.json"
+          export CODEX_HOME="$RUNNER_TEMP/openclaw-keyless-home/codex"
           export OPENCLAW_NO_RESPAWN=1
           node node_modules/openclaw/openclaw.mjs --version
           node -e 'const b=require("./node_modules/openclaw/dist/build-info.json"); if(b.version!=="2026.10.5" || b.commit!=="1b58cb9a1b4f4353e1add63c8506db4d890962e8")process.exit(1)'
