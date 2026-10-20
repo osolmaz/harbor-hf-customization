@@ -10,6 +10,14 @@ on:
       tag:
         description: Image tag, for example parent-worker-0.1.0rc1
         required: true
+      openclaw_runtime:
+        description: Build the pinned OpenClaw runtime bundle only
+        type: boolean
+        default: false
+      openclaw_bundle_run_id:
+        description: Reuse the exact bundle from a completed runtime build
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -17,6 +25,7 @@ permissions:
 
 jobs:
   publish:
+    if: ${{ !inputs.openclaw_runtime }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,13 +46,31 @@ jobs:
       - name: Build the adapter wheel
         run: uv build --wheel --directory packages/anonbench1-adapters
 
+      - name: Check the candidate adapters
+        run: |
+          uv run --project packages/anonbench1-adapters ruff check packages/anonbench1-adapters
+          uv run --project packages/anonbench1-adapters ty check --project packages/anonbench1-adapters
+          uv run --project packages/anonbench1-adapters pytest packages/anonbench1-adapters/tests
+
       - name: Check the adapter import paths and version pin
         run: |
           set -euo pipefail
           uv run --project packages/anonbench1-adapters python scripts/sync_anonbench1_adapters.py --check
           wheel=$(ls packages/anonbench1-adapters/dist/harbor_anonbench1_adapters-*.whl)
-          [ "$(basename "$wheel")" = "harbor_anonbench1_adapters-0.1.0rc5-py3-none-any.whl" ] \
+          [ "$(basename "$wheel")" = "harbor_anonbench1_adapters-0.1.0rc13-py3-none-any.whl" ] \
             || { echo "::error::the Dockerfile pins a different wheel name"; exit 1; }
+
+      - name: Require the verified OpenClaw bundle
+        env:
+          BUNDLE_RUN_ID: ${{ inputs.openclaw_bundle_run_id }}
+        run: test -n "$BUNDLE_RUN_ID"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: openclaw-released-runtime
+          path: build/openclaw-bundle/
+          run-id: ${{ inputs.openclaw_bundle_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push the parent worker image
         uses: docker/build-push-action@v6
@@ -60,3 +87,122 @@ jobs:
             "ghcr.io/osolmaz/harbor-hf-customization/anonbench1-parent:${{ inputs.tag }}" \
             --format '{{json .Manifest.Digest}}')
           echo "anonbench1-parent:${{ inputs.tag }} pushed as $digest"
+
+  openclaw-runtime:
+    if: ${{ inputs.openclaw_runtime }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: openclaw/openclaw
+          ref: 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          path: upstream
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          repository: openclaw/openclaw-atif
+          ref: 8104f23723de448ebe5a0c715a047b76391bbd3c
+          path: exporter
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          path: customization
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.19.0
+      - name: Verify source and toolchain identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          test "$(git -C upstream rev-parse HEAD^{tree})" = a138559698570e238395121723a773106ac33f8c
+          test "$(git -C exporter rev-parse HEAD)" = 8104f23723de448ebe5a0c715a047b76391bbd3c
+          test "$(node --version)" = v24.19.0
+          test "$(node -p "require('./upstream/package.json').version")" = 2026.10.5
+          test "$(node -p "require('./exporter/package.json').version")" = 0.1.4
+          corepack enable
+      - name: Download an existing pinned bundle
+        if: ${{ inputs.openclaw_bundle_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: openclaw-released-runtime
+          path: ${{ runner.temp }}/openclaw-bundle/
+          run-id: ${{ inputs.openclaw_bundle_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install the frozen OpenClaw dependency graph
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
+        working-directory: upstream
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          set -euo pipefail
+          corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
+          pnpm install --frozen-lockfile
+      - name: Build the native core and both bundled plugins
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
+        working-directory: upstream
+        env:
+          GIT_COMMIT: 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          node scripts/package-openclaw-for-docker.mjs             --bundle-plugin codex --bundle-plugin diagnostics-otel             --output-dir "$RUNNER_TEMP/openclaw-bundle"             --pack-json "$RUNNER_TEMP/openclaw-bundle/pack.json"
+      - name: Test and package the pinned exporter
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
+        working-directory: exporter
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          set -euo pipefail
+          npm install --global npm@11.19.0
+          npm ci --ignore-scripts
+          npm test
+          npm run typecheck
+          npm run build
+          npm pack --json --pack-destination "$RUNNER_TEMP/openclaw-bundle" > "$RUNNER_TEMP/openclaw-bundle/exporter-pack.json"
+      - name: Verify the installed native core and bundled plugins
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/openclaw-installed" "$RUNNER_TEMP/openclaw-keyless-home"
+          cd "$RUNNER_TEMP/openclaw-installed"
+          core_pack=$(find "$RUNNER_TEMP/openclaw-bundle" -maxdepth 1 -name 'openclaw-2026.10.5.tgz')
+          test -n "$core_pack"
+          printf '{"private":true,"dependencies":{"openclaw":"file:%s"}}\n' "$core_pack" > package.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+          export OPENCLAW_STATE_DIR="$RUNNER_TEMP/openclaw-keyless-home/state"
+          export OPENCLAW_CONFIG_PATH="$RUNNER_TEMP/openclaw-keyless-home/config.json"
+          export CODEX_HOME="$RUNNER_TEMP/openclaw-keyless-home/codex"
+          export OPENCLAW_NO_RESPAWN=1
+          node node_modules/openclaw/openclaw.mjs --version
+          node -e 'const b=require("./node_modules/openclaw/dist/build-info.json"); if(b.version!=="2026.10.5" || b.commit!=="1b58cb9a1b4f4353e1add63c8506db4d890962e8")process.exit(1)'
+          node node_modules/openclaw/openclaw.mjs plugins enable codex --accept-capabilities
+          node node_modules/openclaw/openclaw.mjs plugins enable diagnostics-otel --accept-capabilities
+          node node_modules/openclaw/openclaw.mjs plugins inspect codex --json > "$RUNNER_TEMP/openclaw-bundle/codex-inspect.json"
+          node node_modules/openclaw/openclaw.mjs plugins inspect diagnostics-otel --json > "$RUNNER_TEMP/openclaw-bundle/diagnostics-inspect.json"
+          cp package.json "$RUNNER_TEMP/openclaw-bundle/core-package.json"
+          cp package-lock.json "$RUNNER_TEMP/openclaw-bundle/core-package-lock.json"
+      - name: Package and verify the relocatable runtime
+        run: bash customization/scripts/package_openclaw_runtime.sh "$RUNNER_TEMP/openclaw-bundle" "$RUNNER_TEMP/openclaw-portable"
+      - name: Record source identities and artifact hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
+          git -C exporter diff --exit-code -- package.json package-lock.json
+          printf '%s\n' 'OpenClaw 2026.10.5: 1b58cb9a1b4f4353e1add63c8506db4d890962e8'             'Node 24.19.0; ATIF 0.1.4: 8104f23723de448ebe5a0c715a047b76391bbd3c'             'Built from unchanged upstream inputs. Runtime qualification is separate.'             > "$RUNNER_TEMP/openclaw-bundle/source.txt"
+          cd "$RUNNER_TEMP/openclaw-bundle"
+          sha256sum ./*.tgz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-released-runtime
+          path: ${{ runner.temp }}/openclaw-bundle/
+          if-no-files-found: error
+          retention-days: 7

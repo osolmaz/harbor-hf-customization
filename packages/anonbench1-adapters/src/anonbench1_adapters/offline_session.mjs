@@ -3,12 +3,12 @@ import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import campaignEvidence from './anonbench1_evidence.mjs';
-import { createHarborTaskTools, createHarborToolClient } from './anonbench1_offline_tools.mjs';
+import { createHarborTaskTools, createHarborToolClient } from './offline_tools.mjs';
 
 export async function createOfflineSession(config, remote) {
   if (process.version !== 'v26.11.1') throw new Error('Node pin mismatch');
   const pi = await import(pathToFileURL(config.entry).href);
-  if (pi.VERSION !== '1.1.0') throw new Error('Pi pin mismatch');
+  if (pi.VERSION !== '1.3.0') throw new Error('Pi pin mismatch');
   const resources = await remote('harbor_resources', 'resources', { skillsDir: config.skillsDir });
   const settingsManager = pi.SettingsManager.inMemory();
   let sessionFailure;

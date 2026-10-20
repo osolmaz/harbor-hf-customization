@@ -1,19 +1,9 @@
-"""Sync the copied adapter modules 1-1 with the reviewed private adapter source.
+"""Copy selected native adapters and settings from a committed source.
 
-The three adapter modules in `packages/anonbench1-adapters/src/anonbench1_adapters/`
-are copies of the reviewed adapter source folder. This script is the only way
-they change. It copies each source file byte for byte, applies one recorded
-rename (the source carries its internal project name; this repository publishes
-the hidden one), and records the result's SHA256 in `sync-manifest.json`
-together with the source revision. CI runs `--check`, which verifies the
-committed files against the manifest, so a hand edit to any copy fails the
-build even though the private source is not available there.
-
-Usage:
-
-    uv run --project packages/anonbench1-adapters \
-        python scripts/sync_anonbench1_adapters.py \
-        --source-root <reviewed adapter source folder> [--check]
+Only allowlisted non-task files enter the package. The manifest records source
+and published hashes. Check copied bytes in CI, or supply the source checkout to
+verify both sides against the recorded commit. OpenClaw requires a separate
+admitted runtime bundle and is not an executable entry point in this release.
 """
 
 import argparse
@@ -30,15 +20,104 @@ TARGET_DIR = REPO_ROOT / PACKAGE / "src/anonbench1_adapters"
 MANIFEST = REPO_ROOT / PACKAGE / "sync-manifest.json"
 
 COPIED_FILES = (
-    ("pi/adapter/campaign_pi.py", "anonbench1_pi.py"),
-    ("openclaw/adapter/campaign_openclaw.py", "anonbench1_openclaw.py"),
-    ("hermes/adapter/campaign_hermes.py", "anonbench1_hermes.py"),
-    ("campaign_pins.py", "anonbench1_pins.py"),
-    ("pi/adapter/campaign_evidence.mjs", "anonbench1_evidence.mjs"),
-    ("pi/adapter/offline_pi.py", "anonbench1_offline_pi.py"),
-    ("pi/adapter/offline_session.mjs", "anonbench1_offline_session.mjs"),
-    ("pi/adapter/offline_task_helper.mjs", "anonbench1_offline_task_helper.mjs"),
-    ("pi/adapter/offline_tools.mjs", "anonbench1_offline_tools.mjs"),
+    (
+        "runs/2026-10-19-shellbench-openclaw-runtime/openclaw/adapter/catalog-diagnostic/index.mjs",
+        "openclaw_catalog/index.mjs",
+    ),
+    (
+        "runs/2026-10-19-shellbench-openclaw-runtime/openclaw/adapter/catalog-diagnostic/openclaw.plugin.json",
+        "openclaw_catalog/openclaw.plugin.json",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/campaign_hermes.py",
+        "anonbench1_hermes.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_source.py",
+        "hermes_source.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_transport.py",
+        "offline_hermes_transport.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_state.py",
+        "offline_hermes_state.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_task.py",
+        "offline_hermes_task.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_web.py",
+        "offline_hermes_web.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_host.py",
+        "offline_hermes_host.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_native.py",
+        "offline_hermes_native.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/__init__.py",
+        "hermes_harbor/__init__.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/reasoning.py",
+        "hermes_harbor/reasoning.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/plugin.yaml",
+        "hermes_harbor/plugin.yaml",
+    ),
+    (
+        "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/campaign_pi.py",
+        "anonbench1_pi.py",
+    ),
+    ("runs/2026-10-16-shellbench-pi-runtime/campaign_pins.py", "anonbench1_pins.py"),
+    (
+        "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/campaign_evidence.mjs",
+        "anonbench1_evidence.mjs",
+    ),
+    ("runs/2026-10-16-shellbench-pi-runtime/pi/adapter/offline_pi.py", "offline_pi.py"),
+    (
+        "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/offline_session.mjs",
+        "offline_session.mjs",
+    ),
+    (
+        "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/offline_task_helper.mjs",
+        "offline_task_helper.mjs",
+    ),
+    (
+        "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/offline_tools.mjs",
+        "offline_tools.mjs",
+    ),
+    (
+        "runs/2026-10-17-shellbench-standalone-observations/codex/adapter/observed_codex.py",
+        "observed_codex.py",
+    ),
+    (
+        "runs/2026-10-17-shellbench-standalone-observations/codex/adapter/retained_codex.py",
+        "retained_codex.py",
+    ),
+    (
+        "runs/2026-10-17-shellbench-standalone-observations/codex/adapter/retained_codex_probe.py",
+        "retained_codex_probe.py",
+    ),
+    (
+        "runs/2026-10-17-shellbench-standalone-observations/claude-code/adapter/observed_claude_code.py",
+        "observed_claude_code.py",
+    ),
+    (
+        "runs/2026-10-17-shellbench-standalone-observations/standalone_observations.py",
+        "standalone_observations.py",
+    ),
+    (
+        "runs/2026-10-17-shellbench-resource-observations/resource_telemetry.py",
+        "resource_telemetry.py",
+    ),
 )
 
 # The recorded rename. The source is reviewed and pinned; this repository
@@ -143,28 +222,39 @@ def check_settings(source_root: Path | None = None) -> list[str]:
 
 
 def transform(data: bytes) -> bytes:
+    """Apply only the recorded package imports and published name changes."""
     text = data.decode("utf-8")
-    # The source adapters import the shared pins module by its bare source name;
-    # the published package keeps it inside anonbench1_adapters.
+    modules = {
+        "campaign_pins": "anonbench1_pins",
+        "offline_pi": "offline_pi",
+        "hermes_source": "hermes_source",
+        "offline_hermes_transport": "offline_hermes_transport",
+        "offline_hermes_state": "offline_hermes_state",
+        "offline_hermes_task": "offline_hermes_task",
+        "resource_telemetry": "resource_telemetry",
+        "standalone_observations": "standalone_observations",
+        "retained_codex": "retained_codex",
+        "retained_codex_probe": "retained_codex_probe",
+    }
+    for source, target in modules.items():
+        text = text.replace(
+            f"from {source} import", f"from anonbench1_adapters.{target} import"
+        )
     text = text.replace(
-        "from campaign_pins import", "from anonbench1_adapters.anonbench1_pins import"
+        "from hermes_harbor.reasoning import",
+        "from anonbench1_adapters.hermes_harbor.reasoning import",
     )
-    text = text.replace(
-        "from offline_pi import",
-        "from anonbench1_adapters.anonbench1_offline_pi import",
-    )
-    for asset in (
-        "offline_session.mjs",
-        "offline_task_helper.mjs",
-        "offline_tools.mjs",
-    ):
-        text = text.replace(asset, f"anonbench1_{asset}")
-    # The source expects a Harbor build whose OpenClaw commands select Node 24;
-    # the published launch contract pins public Harbor 3c823808, whose commands
-    # select Node 22. The runtime guard replaces that prefix either way.
-    text = text.replace("nvm use 24 >/dev/null && ", "nvm use 22 && ")
     for old, new in RENAMES:
         text = text.replace(old, new)
+    # Hermes loads its plugin under its own package name in the task. Resolve
+    # that native package rather than importing the parent worker's package.
+    text = text.replace(
+        "    from .reasoning import register_reasoning",
+        "    from importlib import import_module\n\n"
+        '    register_reasoning = import_module(f"{__package__}.reasoning")'
+        ".register_reasoning",
+    )
+    text = text.replace("# noqa: BLE001 - ", "# noqa: BLE001 -- ")
     return text.encode("utf-8")
 
 
@@ -183,32 +273,56 @@ def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def sync(pairs: list[tuple[Path, Path]], source_root: Path) -> list[str]:
-    changed = []
-    files: dict[str, str] = {}
-    for source, target in pairs:
-        if not source.is_file():
-            raise FileNotFoundError(f"missing source file: {source}")
-        new = transform(source.read_bytes())
-        before = target.read_bytes()
-        target.write_bytes(new)
-        if new != before:
-            changed.append(f"{target.name} synced from the source")
-        files[target.name] = digest(new)
-    manifest = {"source_revision": source_revision(source_root), "files": files}
+def adapter_sources(source_root: Path, revision: str) -> dict[str, bytes]:
+    return {
+        target: subprocess.run(
+            ["git", "-C", str(source_root), "show", f"{revision}:{source}"],
+            capture_output=True,
+            check=True,
+        ).stdout
+        for source, target in COPIED_FILES
+    }
+
+
+def sync(source_root: Path) -> None:
+    revision = source_revision(source_root)
+    originals = adapter_sources(source_root, revision)
+    previous = json.loads(MANIFEST.read_text())["files"]
+    files = {name: transform(data) for name, data in originals.items()}
+    for name in previous.keys() - files.keys():
+        (TARGET_DIR / name).unlink()
+    for name, data in files.items():
+        (TARGET_DIR / name).parent.mkdir(parents=True, exist_ok=True)
+        (TARGET_DIR / name).write_bytes(data)
+    manifest = {
+        "source_revision": revision,
+        "source_files": {name: digest(data) for name, data in originals.items()},
+        "files": {name: digest(data) for name, data in files.items()},
+    }
     MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-    return changed
 
 
-def check(pairs: list[tuple[Path | None, Path]]) -> list[str]:
-    recorded = json.loads(MANIFEST.read_text())["files"]
+def check(source_root: Path | None = None) -> list[str]:
+    manifest = json.loads(MANIFEST.read_text())
+    recorded = manifest["files"]
+    expected = {target for _, target in COPIED_FILES}
     drifted = []
-    for _, target in pairs:
-        expected = recorded.get(target.name)
-        if expected is None:
-            drifted.append(f"{target.name} is not in sync-manifest.json")
-        elif digest(target.read_bytes()) != expected:
-            drifted.append(f"{target.name} does not match sync-manifest.json")
+    if not re.fullmatch(r"[0-9a-f]{40}", manifest["source_revision"]):
+        drifted.append("adapter source revision must be a full commit")
+    if set(recorded) != expected or set(manifest["source_files"]) != expected:
+        drifted.append("adapter inventory differs from the selected source files")
+    for name in expected:
+        path = TARGET_DIR / name
+        if not path.is_file() or digest(path.read_bytes()) != recorded.get(name):
+            drifted.append(f"{name} does not match sync-manifest.json")
+    if source_root is not None:
+        for name, data in adapter_sources(
+            source_root, manifest["source_revision"]
+        ).items():
+            if digest(data) != manifest["source_files"].get(name) or digest(
+                transform(data)
+            ) != recorded.get(name):
+                drifted.append(f"{name} differs from the recorded source revision")
     return drifted
 
 
@@ -224,32 +338,13 @@ def settings_command(args: argparse.Namespace) -> int:
 
 
 def adapter_command(args: argparse.Namespace) -> int:
-    pairs: list[tuple[Path | None, Path]] = [
-        (args.source_root / relative if args.source_root else None, TARGET_DIR / target)
-        for relative, target in COPIED_FILES
-    ]
-
     if args.check:
-        drifted = check(pairs)
-        if drifted:
-            for line in drifted:
-                print(f"drift: {line}", file=sys.stderr)
-            print(
-                "run scripts/sync_anonbench1_adapters.py with the source root "
-                "and commit the result",
-                file=sys.stderr,
-            )
-            return 1
-        print("in sync")
-        return 0
-    resolved: list[tuple[Path, Path]] = []
-    for source, target in pairs:
-        if source is None:
-            raise RuntimeError("sync needs every source file path")
-        resolved.append((source, target))
-    for line in sync(resolved, args.source_root):
-        print(line)
-    print("in sync")
+        drifted = check(args.source_root)
+        for line in drifted:
+            print(f"drift: {line}", file=sys.stderr)
+        return int(bool(drifted))
+    sync(args.source_root)
+    print("adapters in sync; OpenClaw remains held for runtime admission")
     return 0
 
 

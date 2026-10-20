@@ -39,11 +39,7 @@ line-length = 88
 # The copied adapter modules are verbatim 1-1 copies of the
 # harbor-config source, restored by scripts/sync_anonbench1_adapters.py.
 # Formatting them would break the sync, so they stay outside ruff.
-extend-exclude = [
-  "packages/anonbench1-adapters/src/anonbench1_adapters/anonbench1_pi.py",
-  "packages/anonbench1-adapters/src/anonbench1_adapters/anonbench1_openclaw.py",
-  "packages/anonbench1-adapters/src/anonbench1_adapters/anonbench1_hermes.py",
-]
+extend-exclude = ["packages/anonbench1-adapters/src/anonbench1_adapters/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C90", "ANN", "TID"]

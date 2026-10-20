@@ -7,7 +7,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 const [root, cwd, packageEntry] = process.argv.slice(2);
 if (process.version !== 'v26.11.1') throw new Error('Node pin mismatch');
 const pi = await import(pathToFileURL(packageEntry).href);
-if (pi.VERSION !== '1.1.0') throw new Error('Pi pin mismatch');
+if (pi.VERSION !== '1.3.0') throw new Error('Pi pin mismatch');
 const factories = [pi.createReadToolDefinition, pi.createWriteToolDefinition, pi.createEditToolDefinition,
   pi.createGrepToolDefinition, pi.createFindToolDefinition, pi.createLsToolDefinition, pi.createBashToolDefinition];
 const tools = new Map(factories.map(factory => {

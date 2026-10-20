@@ -1,0 +1,16 @@
+{
+  "id": "anonbench1-catalog",
+  "name": "Anonbench1 catalog diagnostic",
+  "cliCommands": [
+    {
+      "name": "anonbench1-catalog",
+      "description": "Capture native projected catalog entries for qualification",
+      "hasSubcommands": false
+    }
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
