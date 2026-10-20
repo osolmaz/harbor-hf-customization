@@ -1,6 +1,6 @@
 [project]
 name = "harbor-anonbench1-adapters"
-version = "0.1.0rc8"
+version = "0.1.0rc9"
 description = "Pinned native Harbor adapters for the Anonbench1 Pi, Codex, and Claude Code runs"
 requires-python = ">=3.12"
 license = "MIT"

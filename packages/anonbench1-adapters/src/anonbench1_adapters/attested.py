@@ -3,6 +3,7 @@
 from typing import Any, override
 
 from harbor.environments.base import BaseEnvironment
+from harbor.models.agent.context import AgentContext
 
 from anonbench1_adapters.anonbench1_pi import Anonbench1Pi as _CopiedPi
 from anonbench1_adapters.anonbench1_pins import require_version
@@ -10,6 +11,7 @@ from anonbench1_adapters.attestation import attest_version
 from anonbench1_adapters.hf_connection import claude_environment, codex_command
 from anonbench1_adapters.observed_claude_code import ObservedClaudeCode
 from anonbench1_adapters.observed_codex import ObservedCodex
+from anonbench1_adapters.pi_completion import require_completed_response
 from anonbench1_adapters.pricing import (
     QuotedClaudeCodeOptions,
     QuotedCodexOptions,
@@ -28,6 +30,11 @@ class Anonbench1Pi(_CopiedPi):
     async def setup(self, environment: BaseEnvironment) -> None:
         await super().setup(environment)
         await attest_version(self, environment, "pi")
+
+    @override
+    def populate_context_post_run(self, context: AgentContext) -> None:
+        super().populate_context_post_run(context)
+        require_completed_response(self.logs_dir / self._OUTPUT_FILENAME)
 
 
 class Anonbench1Codex(ObservedCodex):
