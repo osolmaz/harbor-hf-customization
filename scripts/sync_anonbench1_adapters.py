@@ -21,6 +21,50 @@ MANIFEST = REPO_ROOT / PACKAGE / "sync-manifest.json"
 
 COPIED_FILES = (
     (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/campaign_hermes.py",
+        "anonbench1_hermes.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_source.py",
+        "hermes_source.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_transport.py",
+        "offline_hermes_transport.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_state.py",
+        "offline_hermes_state.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_task.py",
+        "offline_hermes_task.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_web.py",
+        "offline_hermes_web.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_host.py",
+        "offline_hermes_host.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/offline_hermes_native.py",
+        "offline_hermes_native.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/__init__.py",
+        "hermes_harbor/__init__.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/reasoning.py",
+        "hermes_harbor/reasoning.py",
+    ),
+    (
+        "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/hermes_harbor/plugin.yaml",
+        "hermes_harbor/plugin.yaml",
+    ),
+    (
         "runs/2026-10-16-shellbench-pi-runtime/pi/adapter/campaign_pi.py",
         "anonbench1_pi.py",
     ),
@@ -175,6 +219,10 @@ def transform(data: bytes) -> bytes:
     modules = {
         "campaign_pins": "anonbench1_pins",
         "offline_pi": "offline_pi",
+        "hermes_source": "hermes_source",
+        "offline_hermes_transport": "offline_hermes_transport",
+        "offline_hermes_state": "offline_hermes_state",
+        "offline_hermes_task": "offline_hermes_task",
         "resource_telemetry": "resource_telemetry",
         "standalone_observations": "standalone_observations",
         "retained_codex": "retained_codex",
@@ -184,8 +232,20 @@ def transform(data: bytes) -> bytes:
         text = text.replace(
             f"from {source} import", f"from anonbench1_adapters.{target} import"
         )
+    text = text.replace(
+        "from hermes_harbor.reasoning import",
+        "from anonbench1_adapters.hermes_harbor.reasoning import",
+    )
     for old, new in RENAMES:
         text = text.replace(old, new)
+    # Hermes loads its plugin under its own package name in the task. Resolve
+    # that native package rather than importing the parent worker's package.
+    text = text.replace(
+        "    from .reasoning import register_reasoning",
+        "    from importlib import import_module\n\n"
+        '    register_reasoning = import_module(f"{__package__}.reasoning")'
+        ".register_reasoning",
+    )
     text = text.replace("# noqa: BLE001 - ", "# noqa: BLE001 -- ")
     return text.encode("utf-8")
 
@@ -224,6 +284,7 @@ def sync(source_root: Path) -> None:
     for name in previous.keys() - files.keys():
         (TARGET_DIR / name).unlink()
     for name, data in files.items():
+        (TARGET_DIR / name).parent.mkdir(parents=True, exist_ok=True)
         (TARGET_DIR / name).write_bytes(data)
     manifest = {
         "source_revision": revision,

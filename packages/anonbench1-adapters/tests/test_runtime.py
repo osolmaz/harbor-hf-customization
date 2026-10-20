@@ -97,7 +97,7 @@ def test_pi_uses_its_own_node_pin(tmp_path):
     assert "1.3.0" in agent.get_version_command()
 
 
-@pytest.mark.parametrize("name", ["Anonbench1OpenClaw", "Anonbench1Hermes"])
+@pytest.mark.parametrize("name", ["Anonbench1OpenClaw"])
 def test_held_harnesses_have_no_executable_export(name):
     with pytest.raises((ImportError, ValueError, AttributeError)):
         AgentFactory.run_preflight(

@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           uv run --project packages/anonbench1-adapters python scripts/sync_anonbench1_adapters.py --check
           wheel=$(ls packages/anonbench1-adapters/dist/harbor_anonbench1_adapters-*.whl)
-          [ "$(basename "$wheel")" = "harbor_anonbench1_adapters-0.1.0rc9-py3-none-any.whl" ] \
+          [ "$(basename "$wheel")" = "harbor_anonbench1_adapters-0.1.0rc10-py3-none-any.whl" ] \
             || { echo "::error::the Dockerfile pins a different wheel name"; exit 1; }
 
       - name: Build and push the parent worker image

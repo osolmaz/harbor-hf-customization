@@ -5,6 +5,7 @@ from typing import Any, override
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
 
+from anonbench1_adapters.anonbench1_hermes import Anonbench1Hermes as _CopiedHermes
 from anonbench1_adapters.anonbench1_pi import Anonbench1Pi as _CopiedPi
 from anonbench1_adapters.anonbench1_pins import require_version
 from anonbench1_adapters.attestation import attest_version
@@ -89,3 +90,16 @@ class Anonbench1ClaudeCode(ObservedClaudeCode):
     async def setup(self, environment: BaseEnvironment) -> None:
         await super().setup(environment)
         await attest_version(self, environment, "claude-code")
+
+
+class Anonbench1Hermes(_CopiedHermes):
+    """Pinned native Hermes; offline execution keeps the source admission gate."""
+
+    def __init__(self, *, version: str = "v2026.9.24", **kwargs: Any) -> None:  # noqa: ANN401 -- Harbor constructor kwargs vary by adapter.
+        require_version(version, "v2026.9.24")
+        super().__init__(version=version, **kwargs)
+
+    @override
+    async def setup(self, environment: BaseEnvironment) -> None:
+        await super().setup(environment)
+        await attest_version(self, environment, "hermes")

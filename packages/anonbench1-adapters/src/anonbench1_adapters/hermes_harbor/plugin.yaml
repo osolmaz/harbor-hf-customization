@@ -1,0 +1,3 @@
+name: harbor-task
+version: "1.0"
+description: Harbor-owned task operations for the isolated campaign host.

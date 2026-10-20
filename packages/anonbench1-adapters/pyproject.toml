@@ -1,7 +1,7 @@
 [project]
 name = "harbor-anonbench1-adapters"
-version = "0.1.0rc9"
-description = "Pinned native Harbor adapters for the Anonbench1 Pi, Codex, and Claude Code runs"
+version = "0.1.0rc10"
+description = "Pinned native Harbor adapters for the Anonbench1 Pi, Hermes, Codex, and Claude Code runs"
 requires-python = ">=3.12"
 license = "MIT"
 # Runtime dependency note: harbor comes from the parent worker image, which pins
@@ -46,6 +46,15 @@ respect-type-ignore-comments = false
 [tool.ty.src]
 # The synced adapter modules are generated copies (see the ruff exclude note).
 exclude = [
+  "src/anonbench1_adapters/anonbench1_hermes.py",
+  "src/anonbench1_adapters/hermes_source.py",
+  "src/anonbench1_adapters/offline_hermes_transport.py",
+  "src/anonbench1_adapters/offline_hermes_state.py",
+  "src/anonbench1_adapters/offline_hermes_task.py",
+  "src/anonbench1_adapters/offline_hermes_web.py",
+  "src/anonbench1_adapters/offline_hermes_host.py",
+  "src/anonbench1_adapters/offline_hermes_native.py",
+  "src/anonbench1_adapters/hermes_harbor/*",
   "src/anonbench1_adapters/anonbench1_pi.py",
   "src/anonbench1_adapters/anonbench1_pins.py",
   "src/anonbench1_adapters/offline_pi.py",
@@ -66,6 +75,15 @@ asyncio_mode = "auto"
 source = ["anonbench1_adapters"]
 # Generated source has separate provenance and upstream protocol checks.
 omit = [
+  "*/anonbench1_adapters/anonbench1_hermes.py",
+  "*/anonbench1_adapters/hermes_source.py",
+  "*/anonbench1_adapters/offline_hermes_transport.py",
+  "*/anonbench1_adapters/offline_hermes_state.py",
+  "*/anonbench1_adapters/offline_hermes_task.py",
+  "*/anonbench1_adapters/offline_hermes_web.py",
+  "*/anonbench1_adapters/offline_hermes_host.py",
+  "*/anonbench1_adapters/offline_hermes_native.py",
+  "*/anonbench1_adapters/hermes_harbor/*",
   "*/anonbench1_adapters/anonbench1_pi.py",
   "*/anonbench1_adapters/anonbench1_pins.py",
   "*/anonbench1_adapters/offline_pi.py",
@@ -84,6 +102,24 @@ target-version = "py312"
 # (restored by scripts/sync_anonbench1_adapters.py), except for the recorded
 # renames. Formatting them would break the sync, so they stay outside ruff.
 extend-exclude = [
+  "src/anonbench1_adapters/anonbench1_hermes.py",
+  "src/anonbench1_adapters/hermes_source.py",
+  "src/anonbench1_adapters/offline_hermes_transport.py",
+  "src/anonbench1_adapters/offline_hermes_state.py",
+  "src/anonbench1_adapters/offline_hermes_task.py",
+  "src/anonbench1_adapters/offline_hermes_web.py",
+  "src/anonbench1_adapters/offline_hermes_host.py",
+  "src/anonbench1_adapters/offline_hermes_native.py",
+  "src/anonbench1_adapters/hermes_harbor/*",
+  "src/anonbench1_adapters/anonbench1_hermes.py",
+  "src/anonbench1_adapters/hermes_source.py",
+  "src/anonbench1_adapters/offline_hermes_transport.py",
+  "src/anonbench1_adapters/offline_hermes_state.py",
+  "src/anonbench1_adapters/offline_hermes_task.py",
+  "src/anonbench1_adapters/offline_hermes_web.py",
+  "src/anonbench1_adapters/offline_hermes_host.py",
+  "src/anonbench1_adapters/offline_hermes_native.py",
+  "src/anonbench1_adapters/hermes_harbor/*",
   "src/anonbench1_adapters/anonbench1_pi.py",
   "src/anonbench1_adapters/anonbench1_pins.py",
   "src/anonbench1_adapters/offline_pi.py",
