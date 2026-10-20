@@ -14,6 +14,10 @@ on:
         description: Build the pinned OpenClaw runtime bundle only
         type: boolean
         default: false
+      openclaw_bundle_run_id:
+        description: Reuse the exact bundle from a completed runtime build
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -78,6 +82,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v6
         with:
@@ -105,7 +110,16 @@ jobs:
           test "$(node -p "require('./upstream/package.json').version")" = 2026.10.5
           test "$(node -p "require('./exporter/package.json').version")" = 0.1.4
           corepack enable
+      - name: Download an existing pinned bundle
+        if: ${{ inputs.openclaw_bundle_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: openclaw-released-runtime
+          path: ${{ runner.temp }}/openclaw-bundle/
+          run-id: ${{ inputs.openclaw_bundle_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install the frozen OpenClaw dependency graph
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
         working-directory: upstream
         env:
           NODE_OPTIONS: --max-old-space-size=6144
@@ -114,6 +128,7 @@ jobs:
           corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
           pnpm install --frozen-lockfile
       - name: Build the native core and both bundled plugins
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
         working-directory: upstream
         env:
           GIT_COMMIT: 1b58cb9a1b4f4353e1add63c8506db4d890962e8
@@ -121,6 +136,7 @@ jobs:
         run: |
           node scripts/package-openclaw-for-docker.mjs             --bundle-plugin codex --bundle-plugin diagnostics-otel             --output-dir "$RUNNER_TEMP/openclaw-bundle"             --pack-json "$RUNNER_TEMP/openclaw-bundle/pack.json"
       - name: Test and package the pinned exporter
+        if: ${{ inputs.openclaw_bundle_run_id == '' }}
         working-directory: exporter
         env:
           NODE_OPTIONS: --max-old-space-size=4096
@@ -132,6 +148,32 @@ jobs:
           npm run typecheck
           npm run build
           npm pack --json --pack-destination "$RUNNER_TEMP/openclaw-bundle" > "$RUNNER_TEMP/openclaw-bundle/exporter-pack.json"
+      - name: Verify the installed native core and bundled plugins
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/openclaw-installed" "$RUNNER_TEMP/openclaw-keyless-home"
+          cd "$RUNNER_TEMP/openclaw-installed"
+          core_pack=$(find "$RUNNER_TEMP/openclaw-bundle" -maxdepth 1 -name 'openclaw-2026.10.5.tgz')
+          test -n "$core_pack"
+          printf '{"private":true,"dependencies":{"openclaw":"file:%s"}}\n' "$core_pack" > package.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+          export HOME="$RUNNER_TEMP/openclaw-keyless-home"
+          export OPENCLAW_STATE_DIR="$HOME/state"
+          export OPENCLAW_CONFIG_PATH="$HOME/config.json"
+          export CODEX_HOME="$HOME/codex"
+          export OPENCLAW_NO_RESPAWN=1
+          node node_modules/openclaw/openclaw.mjs --version
+          node -e 'const b=require("./node_modules/openclaw/dist/build-info.json"); if(b.version!=="2026.10.5" || b.commit!=="1b58cb9a1b4f4353e1add63c8506db4d890962e8")process.exit(1)'
+          node node_modules/openclaw/openclaw.mjs plugins enable codex --accept-capabilities
+          node node_modules/openclaw/openclaw.mjs plugins enable diagnostics-otel --accept-capabilities
+          node node_modules/openclaw/openclaw.mjs plugins inspect codex --json > "$RUNNER_TEMP/openclaw-bundle/codex-inspect.json"
+          node node_modules/openclaw/openclaw.mjs plugins inspect diagnostics-otel --json > "$RUNNER_TEMP/openclaw-bundle/diagnostics-inspect.json"
+          cp package.json "$RUNNER_TEMP/openclaw-bundle/core-package.json"
+          cp package-lock.json "$RUNNER_TEMP/openclaw-bundle/core-package-lock.json"
       - name: Record source identities and artifact hashes
         shell: bash
         run: |
