@@ -96,6 +96,10 @@ jobs:
           ref: 8104f23723de448ebe5a0c715a047b76391bbd3c
           path: exporter
           persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          path: customization
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: 24.19.0
@@ -173,6 +177,8 @@ jobs:
           node node_modules/openclaw/openclaw.mjs plugins inspect diagnostics-otel --json > "$RUNNER_TEMP/openclaw-bundle/diagnostics-inspect.json"
           cp package.json "$RUNNER_TEMP/openclaw-bundle/core-package.json"
           cp package-lock.json "$RUNNER_TEMP/openclaw-bundle/core-package-lock.json"
+      - name: Package and verify the relocatable runtime
+        run: bash customization/scripts/package_openclaw_runtime.sh "$RUNNER_TEMP/openclaw-bundle" "$RUNNER_TEMP/openclaw-portable"
       - name: Record source identities and artifact hashes
         shell: bash
         run: |
