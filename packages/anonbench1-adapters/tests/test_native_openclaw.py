@@ -136,9 +136,11 @@ async def test_bundle_integrity_before_upload(tmp_path, monkeypatch, valid):
     metadata = {"openclaw": "2026.10.5", "node": "24.19.0"}
     bundle.with_name("runtime.json").write_text(json.dumps(metadata))
     monkeypatch.setattr(module, "BUNDLE", bundle)
-    env = SimpleNamespace(upload_file=AsyncMock())
+    env = SimpleNamespace(upload_file=AsyncMock(), upload_dir=AsyncMock())
     agent = make_agent(tmp_path)
-    agent.exec_as_agent = AsyncMock()
+    agent.exec_as_agent = AsyncMock(
+        return_value=SimpleNamespace(stdout="/home/agent/runtime/core/catalog")
+    )
     if not valid:
         with pytest.raises(ValueError, match="checksum mismatch"):
             await agent.install(env)
@@ -148,8 +150,55 @@ async def test_bundle_integrity_before_upload(tmp_path, monkeypatch, valid):
     env.upload_file.assert_awaited_once_with(
         bundle, "/tmp/harbor-openclaw-runtime.tar.gz"
     )
-    command = agent.exec_as_agent.call_args.kwargs["command"]
+    command = agent.exec_as_agent.call_args_list[0].kwargs["command"]
     assert digest in command
     assert "npm install" not in command
     assert "sha256sum -c -" in command
     assert json.loads((tmp_path / "runtime-bundle.json").read_text()) == metadata
+
+
+def test_catalog_plugin_is_passive_and_preserves_existing_allowlist(tmp_path):
+    agent = make_agent(
+        tmp_path,
+        model_api="openai-completions",
+        openclaw_config={"plugins": {"allow": ["codex"]}},
+    )
+    agent._catalog_path = "/runtime/core/catalog"
+    cfg = agent._build_full_openclaw_config()
+    assert cfg["plugins"]["allow"] == ["codex", "anonbench1-catalog"]
+    assert cfg["plugins"]["load"]["paths"] == [agent._catalog_path]
+
+
+async def test_native_policy_is_admitted_before_model_command(tmp_path, monkeypatch):
+    from test_openclaw_policy import fixture
+
+    capture, raw = fixture()
+    execute = AsyncMock(
+        side_effect=[
+            SimpleNamespace(stdout="/workspace"),
+            SimpleNamespace(stdout=""),
+            SimpleNamespace(stdout="20\n"),
+            "native-result",
+        ]
+    )
+    monkeypatch.setattr(OpenClaw, "exec_as_agent", execute)
+
+    async def download(source, target):
+        target.write_bytes(
+            raw if source.endswith("catalog.json") else json.dumps(capture).encode()
+        )
+
+    env = SimpleNamespace(download_file=download)
+    agent = make_agent(tmp_path, model_api="openai-completions", thinking="high")
+    prefix = ". ~/.nvm/nvm.sh && nvm use 24 >/dev/null && "
+    result = await agent.exec_as_agent(
+        env,
+        prefix + "openclaw agent --local --json --message example",
+        env={"OPENCLAW_STATE_DIR": "/private-state"},
+    )
+    assert result == "native-result"
+    assert "anonbench1-catalog" in execute.call_args_list[1].kwargs["command"]
+    binding = json.loads((tmp_path / "openclaw-policy-binding.json").read_text())
+    assert binding["state_schema_version"] == 20
+    assert binding["native_policy"] == capture
+    assert execute.call_count == 4

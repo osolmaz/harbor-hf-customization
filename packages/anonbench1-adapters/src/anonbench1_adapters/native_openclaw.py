@@ -16,6 +16,7 @@ from harbor.environments.base import BaseEnvironment
 from pydantic import BaseModel, Field
 
 from anonbench1_adapters.attestation import attest_version
+from anonbench1_adapters.openclaw_policy import admit_policy
 
 BUNDLE = Path("/opt/harbor-hf-openclaw/runtime.tar.gz")
 RUNTIME = "$HOME/.local/share/harbor/openclaw-runtime"
@@ -42,7 +43,7 @@ class ModelPrice(BaseModel):
 
 
 class Anonbench1OpenClawOptions(OpenClawOptions):
-    runtime: Literal["openclaw", "codex"] = Field(
+    runtime: Literal["openclaw"] = Field(
         description="Explicit native OpenClaw agent runtime."
     )
     code_mode: bool = Field(
@@ -95,6 +96,16 @@ class Anonbench1OpenClaw(OpenClaw):
             ),
             timeout_sec=self._install_exec_timeout_sec,
         )
+        location = await self.exec_as_agent(
+            environment,
+            command=f'printf "%s" "{RUNTIME}/core/catalog-diagnostic"',
+        )
+        self._catalog_path = location.stdout.strip()
+        if not self._catalog_path.startswith("/") or "\n" in self._catalog_path:
+            raise ValueError("OpenClaw diagnostic directory must be absolute")
+        await environment.upload_dir(
+            Path(__file__).with_name("openclaw_catalog"), self._catalog_path
+        )
         metadata = json.loads(BUNDLE.with_name("runtime.json").read_text())
         (self.logs_dir / "runtime-bundle.json").write_text(
             json.dumps(metadata, indent=2)
@@ -115,15 +126,87 @@ class Anonbench1OpenClaw(OpenClaw):
         timeout_sec: int | None = None,
     ) -> Any:  # noqa: ANN401 -- Harbor execution result and kwargs.
         prefix = ". ~/.nvm/nvm.sh && nvm use 24 >/dev/null && "
+        if command.startswith(prefix + "openclaw agent --local --json "):
+            await self._capture_policy(environment, env or {})
         if command.startswith(prefix):
             command = f"{SELECT} && {command[len(prefix) :]}"
         return await super().exec_as_agent(
             environment, command=command, env=env, cwd=cwd, timeout_sec=timeout_sec
         )
 
+    async def _capture_policy(
+        self, environment: BaseEnvironment, env: dict[str, str]
+    ) -> None:
+        state = env["OPENCLAW_STATE_DIR"]
+        current = await super().exec_as_agent(environment, "pwd -P", env=env)
+        workspace = current.stdout.strip()
+        catalog = f"{self._CONTAINER_LOGS_AGENT}/openclaw-catalog.json"
+        policy = f"{self._CONTAINER_LOGS_AGENT}/openclaw-thinking-policy.json"
+        command = shlex.join(
+            [
+                "openclaw",
+                "anonbench1-catalog",
+                "--agent-dir",
+                state + "/agents/main/agent",
+                "--workspace-dir",
+                workspace,
+                "--output",
+                catalog,
+                "--thinking-model",
+                str(self.model_name),
+                "--thinking-runtime",
+                "openclaw",
+                "--thinking-output",
+                policy,
+            ]
+        )
+        await super().exec_as_agent(
+            environment,
+            command=f"{SELECT} && rm -f -- {catalog} {policy} && {command}",
+            env=env,
+            timeout_sec=self._CAPTURE_TIMEOUT_SEC,
+        )
+        catalog_path = self.logs_dir / "openclaw-catalog.json"
+        policy_path = self.logs_dir / "openclaw-thinking-policy.json"
+        await environment.download_file(catalog, catalog_path)
+        await environment.download_file(policy, policy_path)
+        binding = admit_policy(
+            json.loads(policy_path.read_text()),
+            catalog_path.read_bytes(),
+            str(self.model_name),
+            self.options.model_api,
+            self.options.thinking,
+        )
+        schema_check = shlex.quote(
+            "const {DatabaseSync}=require('node:sqlite'); "
+            "const db=new DatabaseSync(process.argv[1],{readOnly:true}); "
+            "const version=db.prepare('PRAGMA user_version').get().user_version; "
+            "db.close(); if(version!==20)throw Error('Unexpected state schema'); "
+            "console.log(version);"
+        )
+        schema = await super().exec_as_agent(
+            environment,
+            command=f"{SELECT} && node -e {schema_check} "
+            + shlex.quote(state + "/state/openclaw.sqlite"),
+            env=env,
+            timeout_sec=self._IO_TIMEOUT_SEC,
+        )
+        binding["state_schema_version"] = int(schema.stdout.strip())
+        (self.logs_dir / "openclaw-policy-binding.json").write_text(
+            json.dumps(binding, indent=2) + "\n"
+        )
+
     @override
     def _build_full_openclaw_config(self) -> dict[str, Any]:
         cfg = super()._build_full_openclaw_config()
+        if getattr(self, "_catalog_path", None):
+            plugins = cfg.setdefault("plugins", {})
+            plugins.setdefault("load", {}).setdefault("paths", []).append(
+                self._catalog_path
+            )
+            plugins.setdefault("entries", {})["anonbench1-catalog"] = {"enabled": True}
+            if plugins.get("allow") and "anonbench1-catalog" not in plugins["allow"]:
+                plugins["allow"].append("anonbench1-catalog")
         assert self.model_name is not None
         provider, model_id = self.model_name.split("/", 1)
         defaults = cfg.setdefault("agents", {}).setdefault("defaults", {})

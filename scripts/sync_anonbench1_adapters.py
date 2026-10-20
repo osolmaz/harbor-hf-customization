@@ -21,6 +21,14 @@ MANIFEST = REPO_ROOT / PACKAGE / "sync-manifest.json"
 
 COPIED_FILES = (
     (
+        "runs/2026-10-19-shellbench-openclaw-runtime/openclaw/adapter/catalog-diagnostic/index.mjs",
+        "openclaw_catalog/index.mjs",
+    ),
+    (
+        "runs/2026-10-19-shellbench-openclaw-runtime/openclaw/adapter/catalog-diagnostic/openclaw.plugin.json",
+        "openclaw_catalog/openclaw.plugin.json",
+    ),
+    (
         "runs/2026-10-13-shellbench-hermes-runtime/hermes/adapter/campaign_hermes.py",
         "anonbench1_hermes.py",
     ),

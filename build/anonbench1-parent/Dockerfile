@@ -9,12 +9,12 @@
 # wheel carries no credentials and no task data.
 FROM ghcr.io/osolmaz/harbor-hf-customization/anonbench1-parent@sha256:31a85f921a974a8897102510cb094ecee8b44ca6c06a920845491c361c85e1db
 
-COPY packages/anonbench1-adapters/dist/harbor_anonbench1_adapters-0.1.0rc12-py3-none-any.whl /tmp/
+COPY packages/anonbench1-adapters/dist/harbor_anonbench1_adapters-0.1.0rc13-py3-none-any.whl /tmp/
 
 RUN uv pip install --python /opt/harbor-hf-parent \
-        /tmp/harbor_anonbench1_adapters-0.1.0rc12-py3-none-any.whl \
+        /tmp/harbor_anonbench1_adapters-0.1.0rc13-py3-none-any.whl \
     && python -c "from anonbench1_adapters import Anonbench1ClaudeCode, Anonbench1Codex, Anonbench1Hermes, Anonbench1Pi" \
-    && rm /tmp/harbor_anonbench1_adapters-0.1.0rc12-py3-none-any.whl
+    && rm /tmp/harbor_anonbench1_adapters-0.1.0rc13-py3-none-any.whl
 
 # Exact same-source bundle, installed and inspected before image publication.
 COPY build/openclaw-bundle/runtime.tar.gz /opt/harbor-hf-openclaw/runtime.tar.gz
