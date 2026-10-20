@@ -10,6 +10,10 @@ on:
       tag:
         description: Image tag, for example parent-worker-0.1.0rc1
         required: true
+      openclaw_runtime:
+        description: Build the pinned OpenClaw runtime bundle only
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,6 +21,7 @@ permissions:
 
 jobs:
   publish:
+    if: ${{ !inputs.openclaw_runtime }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,3 +71,79 @@ jobs:
             "ghcr.io/osolmaz/harbor-hf-customization/anonbench1-parent:${{ inputs.tag }}" \
             --format '{{json .Manifest.Digest}}')
           echo "anonbench1-parent:${{ inputs.tag }} pushed as $digest"
+
+  openclaw-runtime:
+    if: ${{ inputs.openclaw_runtime }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          repository: openclaw/openclaw
+          ref: 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          path: upstream
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          repository: openclaw/openclaw-atif
+          ref: 8104f23723de448ebe5a0c715a047b76391bbd3c
+          path: exporter
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.19.0
+      - name: Verify source and toolchain identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          test "$(git -C upstream rev-parse HEAD^{tree})" = a138559698570e238395121723a773106ac33f8c
+          test "$(git -C exporter rev-parse HEAD)" = 8104f23723de448ebe5a0c715a047b76391bbd3c
+          test "$(node --version)" = v24.19.0
+          test "$(node -p "require('./upstream/package.json').version")" = 2026.10.5
+          test "$(node -p "require('./exporter/package.json').version")" = 0.1.4
+          corepack enable
+      - name: Install the frozen OpenClaw dependency graph
+        working-directory: upstream
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          set -euo pipefail
+          corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
+          pnpm install --frozen-lockfile
+      - name: Build the native core and both bundled plugins
+        working-directory: upstream
+        env:
+          GIT_COMMIT: 1b58cb9a1b4f4353e1add63c8506db4d890962e8
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          node scripts/package-openclaw-for-docker.mjs             --bundle-plugin codex --bundle-plugin diagnostics-otel             --output-dir "$RUNNER_TEMP/openclaw-bundle"             --pack-json "$RUNNER_TEMP/openclaw-bundle/pack.json"
+      - name: Test and package the pinned exporter
+        working-directory: exporter
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          set -euo pipefail
+          npm install --global npm@11.19.0
+          npm ci --ignore-scripts
+          npm test
+          npm run typecheck
+          npm run build
+          npm pack --json --pack-destination "$RUNNER_TEMP/openclaw-bundle" > "$RUNNER_TEMP/openclaw-bundle/exporter-pack.json"
+      - name: Record source identities and artifact hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
+          git -C exporter diff --exit-code -- package.json package-lock.json
+          printf '%s\n' 'OpenClaw 2026.10.5: 1b58cb9a1b4f4353e1add63c8506db4d890962e8'             'Node 24.19.0; ATIF 0.1.4: 8104f23723de448ebe5a0c715a047b76391bbd3c'             'Built from unchanged upstream inputs. Runtime qualification is separate.'             > "$RUNNER_TEMP/openclaw-bundle/source.txt"
+          cd "$RUNNER_TEMP/openclaw-bundle"
+          sha256sum ./*.tgz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-released-runtime
+          path: ${{ runner.temp }}/openclaw-bundle/
+          if-no-files-found: error
+          retention-days: 7
