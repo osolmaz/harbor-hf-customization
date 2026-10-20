@@ -61,6 +61,7 @@ class Anonbench1OpenClawOptions(OpenClawOptions):
 class Anonbench1OpenClaw(OpenClaw):
     """Leave task execution, export, timeouts and cancellation to pinned Harbor."""
 
+    _SETUP_CLI = "openclaw setup --baseline --workspace . --skip-bootstrap"
     options_model = Anonbench1OpenClawOptions
     options: Anonbench1OpenClawOptions
 

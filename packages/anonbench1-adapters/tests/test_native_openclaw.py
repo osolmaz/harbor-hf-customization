@@ -119,6 +119,7 @@ async def test_setup_attests_and_keeps_native_lifecycle(tmp_path, monkeypatch):
     await agent.setup(env)
     setup.assert_awaited_once_with(env)
     attest.assert_awaited_once_with(agent, env, "openclaw")
+    assert agent._SETUP_CLI.endswith(" --skip-bootstrap")
     assert agent.run.__func__ is OpenClaw.run
     assert "v24.19.0" in agent.get_version_command()
     assert "1b58cb9a1b4f4353e1add63c8506db4d890962e8" in agent.get_version_command()
